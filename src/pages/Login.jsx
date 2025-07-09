@@ -15,7 +15,7 @@ const Login = () => {
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post("http://192.168.1.17:5001/api/auth/login", {
+      const res = await axios.post("https://zapalert-backend.onrender.com/api/auth/login", {
         username,
         password,
       });
