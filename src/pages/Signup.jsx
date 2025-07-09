@@ -46,7 +46,7 @@ const Signup = () => {
     formData.append("validId", idImage);
 
     try {
-      const res = await axios.post("http://localhost:5001/api/auth/signup", formData);
+      const res = await axios.post("https://zapalert-backend.onrender.com/api/auth/signup", formData);
       setSuccess("Signup successful. Await admin approval.");
       setTimeout(() => navigate("/"), 3000);
     } catch (err) {

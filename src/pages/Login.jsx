@@ -29,9 +29,13 @@ const Login = () => {
       else if (role === "responder") navigate("/responder");
       else if (role === "admin") navigate("/admin");
       else setError("Unknown role");
-    } catch (err) {
-      setError(err.response?.data?.message || "Login failed");
-    }
+} catch (err) {
+  console.error("🛑 Login error:", err);
+  if (err.response) {
+    console.log("📩 Backend response:", err.response.data);
+  }
+  setError(err.response?.data?.error || err.response?.data?.message || "Login failed");
+}
   };
 
   return (
