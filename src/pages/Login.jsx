@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { FaEye, FaEyeSlash } from "react-icons/fa"; 
+const API = import.meta.env.VITE_API_URL;
 
 const Login = () => {
   const navigate = useNavigate();
@@ -15,7 +16,10 @@ const Login = () => {
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post("https://zapalert-backend.onrender.com/api/auth/login", {
+      console.log("🚀 Sending login to:", `${API}/api/auth/login`);
+console.log("📦 Payload:", { username, password });
+
+      const res = await axios.post(`${API}/api/auth/login`, {
         username,
         password,
       });
@@ -29,14 +33,16 @@ const Login = () => {
       else if (role === "responder") navigate("/responder");
       else if (role === "admin") navigate("/admin");
       else setError("Unknown role");
-} catch (err) {
-  console.error("🛑 Login error:", err);
-  if (err.response) {
-    console.log("📩 Backend response:", err.response.data);
-  }
-  setError(err.response?.data?.error || err.response?.data?.message || "Login failed");
-}
-  };
+      } catch (err) {
+        console.error("🛑 Login error:", err);
+        if (err.response) {
+          console.log("📩 Backend response:", err.response.data);
+        } else {
+          console.log("❌ No response from backend");
+        }
+        setError(err.response?.data?.error || err.response?.data?.message || "Login failed");
+      }
+        };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-600 to-red-800 flex items-center justify-center">
