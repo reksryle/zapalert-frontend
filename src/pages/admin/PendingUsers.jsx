@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import toast from "react-hot-toast";
+const baseURL = import.meta.env.VITE_API_BASE_URL;
+
 
 const PendingUsers = () => {
   const [pendingUsers, setPendingUsers] = useState([]);
@@ -8,7 +10,7 @@ const PendingUsers = () => {
 
   const fetchPending = async () => {
     try {
-      const res = await axios.get("https://zapalert-backend.onrender.comhost:5001/api/auth/pending-users");
+      const res = await axios.get(`${baseURL}/api/auth/pending-users`);
       setPendingUsers(res.data);
     } catch (err) {
       console.error("Error fetching pending users:", err);
@@ -17,7 +19,7 @@ const PendingUsers = () => {
 
   const approveUser = async (id) => {
     try {
-      await axios.patch(`https://zapalert-backend.onrender.com/api/auth/approve/${id}`);
+      await axios.patch(`${baseURL}/api/auth/approve/${id}`);
       toast.success("User approved successfully!");
       fetchPending();
     } catch (error) {
@@ -28,7 +30,7 @@ const PendingUsers = () => {
 
   const rejectUser = async (id) => {
     try {
-      await axios.delete(`https://zapalert-backend.onrender.com/api/auth/reject/${id}`);
+      await axios.delete(`${baseURL}/api/auth/reject/${id}`);
       toast.success("User rejected and deleted.");
       fetchPending();
     } catch (error) {
