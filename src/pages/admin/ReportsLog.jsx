@@ -26,7 +26,7 @@ const ReportsLog = () => {
 
   const fetchReports = async () => {
     try {
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/reports`);
+      const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/reports`);
       setReports(response.data.filter((r) => !r.archived));
     } catch (error) {
       toast.error("Failed to fetch reports.");
