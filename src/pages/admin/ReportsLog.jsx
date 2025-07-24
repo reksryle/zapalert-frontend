@@ -35,7 +35,7 @@ const ReportsLog = () => {
 
   const handleDelete = async () => {
     try {
-      await axios.delete(`${import.meta.env.VITE_API_URL}/reports/${selectedReport._id}`);
+      await axios.delete(`${import.meta.env.VITE_BACKEND_URL}/reports/${selectedReport._id}`);
       toast.success("Report permanently deleted.");
       fetchReports();
       setSelectedReport(null);
