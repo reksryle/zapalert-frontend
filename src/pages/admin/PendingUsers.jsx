@@ -3,6 +3,7 @@ import axios from "axios";
 import toast from "react-hot-toast";
 
 const BASE_URL = import.meta.env.VITE_API_URL;
+const BASE_IMAGE_URL = import.meta.env.VITE_IMAGE_URL || "https://zapalert-backend.onrender.com";
 
 const PendingUsers = () => {
   const [pendingUsers, setPendingUsers] = useState([]);
@@ -58,7 +59,7 @@ const PendingUsers = () => {
       ) : (
         <div className="grid gap-6">
           {pendingUsers.map((user) => {
-            const imgURL = `${BASE_URL}/${user.idImagePath.replace(/\\/g, "/")}`;
+            const imgURL = `${BASE_IMAGE_URL}/${user.idImagePath.replace(/\\/g, "/")}`;
             return (
               <div
                 key={user._id}
