@@ -32,7 +32,7 @@ const AllUsers = () => {
 
   useEffect(() => {
     const filtered = allUsers.filter((user) => {
-      const roleMatch = roleFilter === "All" || user.role === roleFilter.toLowerCase();
+      const roleMatch = roleFilter === "All" || user.role?.toLowerCase() === roleFilter.toLowerCase();  
       const statusMatch = statusFilter === "All" || user.status === statusFilter.toLowerCase();
       const barangayMatch = barangayFilter === "All" || user.barangay === barangayFilter;
       const barrioMatch = barrioFilter === "All" || user.barrio === barrioFilter;
@@ -70,7 +70,7 @@ const AllUsers = () => {
   const handleApprove = async (id) => {
     if (!window.confirm("Are you sure you want to approve this user?")) return;
     try {
-      await axios.patch(`${BASE_URL}/api/auth/approve/${id}`, {}, { withCredentials: true });
+      await axios.patch(`${BASE_URL}/auth/approve/${id}`, {}, { withCredentials: true });
       fetchAllUsers();
       setSelectedUser(null);
     } catch (error) {
@@ -81,7 +81,7 @@ const AllUsers = () => {
   const handleReject = async (id) => {
     if (!window.confirm("Are you sure you want to reject this user?")) return;
     try {
-      await axios.delete(`${BASE_URL}/api/auth/reject/${id}`, { withCredentials: true });
+      await axios.delete(`${BASE_URL}/auth/reject/${id}`, { withCredentials: true });
       fetchAllUsers();
       setSelectedUser(null);
     } catch (error) {
@@ -91,7 +91,7 @@ const AllUsers = () => {
 
   const handleDelete = async (id) => {
     try {
-      await axios.delete(`${BASE_URL}/api/auth/reject/${id}`, { withCredentials: true });
+      await axios.delete(`${BASE_URL}/auth/reject/${id}`, { withCredentials: true });
       fetchAllUsers();
       setSelectedUser(null);
       toast.success("User deleted successfully.");
