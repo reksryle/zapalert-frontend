@@ -3,6 +3,7 @@ import axios from "axios";
 import toast from "react-hot-toast";
 
 const BASE_URL = import.meta.env.VITE_API_URL;
+const BASE_IMAGE_URL = import.meta.env.VITE_IMAGE_URL || "https://zapalert-backend.onrender.com";
 
 const AllUsers = () => {
   const [allUsers, setAllUsers] = useState([]);
@@ -226,13 +227,13 @@ const AllUsers = () => {
               <div className="mt-4 flex justify-center">
                 {selectedUser.idImagePath ? (
                   <a
-                    href={`${BASE_URL}/${selectedUser.idImagePath.replace(/\\/g, "/")}`}
+                    href={`${BASE_IMAGE_URL}/${selectedUser.idImagePath.replace(/\\/g, "/")}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="relative group"
                   >
                     <img
-                      src={`${BASE_URL}/${selectedUser.idImagePath.replace(/\\/g, "/")}`}
+                      src={`${BASE_IMAGE_URL}/${selectedUser.idImagePath.replace(/\\/g, "/")}`}
                       alt="Valid ID"
                       className="w-[350px] h-[220px] object-cover border rounded shadow hover:opacity-90 transition-transform duration-300 group-hover:scale-105"
                     />
