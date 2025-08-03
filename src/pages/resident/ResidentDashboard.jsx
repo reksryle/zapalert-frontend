@@ -70,7 +70,6 @@ const ResidentDashboard = () => {
   }, []);
 
   useEffect(() => {
-    announcementAudioRef.current = new Audio("/sounds/announcement.mp3");
     respondedAudioRef.current = new Audio("/sounds/responded.mp3");
     declinedAudioRef.current = new Audio("/sounds/declined.mp3");
   }, []);
