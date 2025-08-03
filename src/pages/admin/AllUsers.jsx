@@ -18,7 +18,7 @@ const AllUsers = () => {
 
   const fetchAllUsers = async () => {
     try {
-      const res = await axios.get(`${BASE_URL}/api/auth/all-users`, { withCredentials: true });
+      const res = await axios.get(`${BASE_URL}/auth/all-users`, { withCredentials: true });
       setAllUsers(res.data);
       setFilteredUsers(res.data);
     } catch (err) {
