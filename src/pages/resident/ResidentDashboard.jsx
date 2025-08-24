@@ -124,14 +124,14 @@ const ResidentDashboard = () => {
     socket.emit("join-resident", username);
 
     socket.on("notify-resident", (data) => {
-      toast.success(`🚑 Responder ${data.responderName} is on their way to your ${data.type} report!`);
+      toast.success(`🚑 Responder ${data.responderName} is on its way to your ${data.type} report!`);
       if (audioRef.current) {
         audioRef.current.currentTime = 0;
         audioRef.current.play().catch((err) => console.warn("🔇 Sound error:", err));
       }
 
       const newNotif = {
-        message: `🟡 Responder ${data.responderName} is on their way to your ${data.type} report!`,
+        message: `🟡 Responder ${data.responderName} is on its way to your ${data.type} report!`,
         timestamp: new Date().toLocaleString(),
       };
       setNotifications((prev) => [newNotif, ...prev]);
@@ -154,7 +154,7 @@ const ResidentDashboard = () => {
     });
 
     socket.on("declined", (data) => {
-      toast.error(`❌ Responder ${data.responderName} declined your ${data.type} report.`);
+      toast.error(`🔴 Responder ${data.responderName} declined your ${data.type} report.`);
       if (declinedAudioRef.current) {
         declinedAudioRef.current.currentTime = 0;
         declinedAudioRef.current.play().catch((err) => console.warn("🔇 Declined sound error:", err));

@@ -4,6 +4,20 @@ import useEmergencyReports from "../../hooks/useEmergencyReports";
 const EmergencyList = () => {
   const { reports, markAsOnTheWay, markAsResponded, declineReport } = useEmergencyReports(false);
 
+  const formatPHTime = (isoString) => {
+    if (!isoString) return "N/A";
+    return new Date(isoString).toLocaleString("en-PH", {
+      timeZone: "Asia/Manila",
+      year: "numeric",
+      month: "short",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: true,
+    });
+  };
+
   return (
     <div className="mb-6">
       <h2 className="text-xl font-semibold mb-4">Emergency List</h2>
@@ -25,6 +39,9 @@ const EmergencyList = () => {
                 </p>
                 <p className="text-sm text-gray-500">
                   Contact: {report.contactNumber ?? "N/A"}
+                </p>
+                <p className="text-xs text-gray-400 mt-1">
+                  Reported at: {formatPHTime(report.createdAt)}
                 </p>
               </div>
               <div className="flex flex-col gap-1 text-xs">
