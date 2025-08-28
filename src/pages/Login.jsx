@@ -32,13 +32,22 @@ const Login = () => {
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post("/auth/login", { username, password }, { withCredentials: true });
+      // Trim and lowercase username
+      const normalizedUsername = username.trim().toLowerCase();
+
+      const res = await axios.post(
+        "/auth/login",
+        { username: normalizedUsername, password },
+        { withCredentials: true }
+      );
+
       const { role } = res.data;
       navigate(`/${role}`);
     } catch (err) {
       setError(err.response?.data?.message || "Login failed.");
     }
   };
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-600 to-red-800 flex items-center justify-center">

@@ -74,21 +74,21 @@ const MapView = ({ responderNotifications, setResponderNotifications, hasNewNoti
   useEffect(() => {
     const handleDeclined = (data) => {
       const message = `🔴 ${data.responderName} declined the ${data.type} report of ${data.residentName}`;
-      new Audio("/sounds/declined.mp3").play().catch(() => {});
+      new Audio("/sounds/responderdeclined.mp3").play().catch(() => {});
       setResponderNotifications((prev) => [{ ...data, message, timestamp: new Date().toLocaleString() }, ...prev]);
       setHasNewNotif(true);
     };
 
     const handleOnTheWay = (data) => {
       const message = `🟡 ${data.responderName} is on its way to the ${data.type} report of ${data.residentName}`;
-      new Audio("/sounds/ontheway.mp3").play().catch(() => {});
+      new Audio("/sounds/responderontheway.mp3").play().catch(() => {});
       setResponderNotifications((prev) => [{ ...data, message, timestamp: new Date().toLocaleString() }, ...prev]);
       setHasNewNotif(true);
     };
 
     const handleResponded = (data) => {
       const message = `🟢 ${data.responderName} has responded to the ${data.type} report of ${data.residentName}`;
-      new Audio("/sounds/responded.mp3").play().catch(() => {});
+      new Audio("/sounds/responderresponded.mp3").play().catch(() => {});
       setResponderNotifications((prev) => [{ ...data, message, timestamp: new Date().toLocaleString() }, ...prev]);
       setHasNewNotif(true);
     };
