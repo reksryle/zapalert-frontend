@@ -57,19 +57,19 @@ const AutoOpenMarker = ({
               onClick={handleOnTheWay}
               className="text-blue-600 text-xs hover:underline"
             >
-              🚓 On our way
+              𝗢𝗡 𝗧𝗛𝗘 𝗪𝗔𝗬
             </button>
             <button
               onClick={handleResponded}
               className="text-green-600 text-xs hover:underline"
             >
-              ✅ Responded
+              𝗥𝗘𝗦𝗣𝗢𝗡𝗗𝗘𝗗
             </button>
             <button
               onClick={handleDecline}
               className="text-red-600 text-xs hover:underline"
             >
-              ❌ Decline
+              𝗗𝗘𝗖𝗟𝗜𝗡𝗘
             </button>
           </div>
         </div>
