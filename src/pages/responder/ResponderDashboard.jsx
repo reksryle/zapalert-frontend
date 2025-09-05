@@ -10,6 +10,7 @@ import AutoOpenMarker from "../../components/AutoOpenMarker";
 import { Bell, Menu, X, Home, User, LogOut } from "lucide-react";
 import useEmergencyReports from "../../hooks/useEmergencyReports";
 import showAnnouncementToast from "../../utils/showAnnouncementToast";
+import usePushNotifications from "../../hooks/usePushNotifications";
 
 // ---------------- Map Helper ----------------
 const iconMap = {
@@ -294,13 +295,30 @@ const ResponderDashboard = () => {
   const handleLogout = async () => {
     try {
       await axios.post("/auth/logout", {}, { withCredentials: true });
+
+      // Unregister service worker to stop future push notifications
+      if ("serviceWorker" in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        for (const reg of registrations) {
+          await reg.unregister();
+        }
+      }
     } catch {
       console.warn("Logout failed or already logged out.");
     }
+
     localStorage.removeItem("responder-notifications");
     localStorage.removeItem("responder-hasNewNotif");
     navigate("/");
   };
+
+
+  usePushNotifications({
+  username,
+  firstName: fullName.split(" ")[0] || "",
+  lastName: fullName.split(" ")[1] || "",
+  role: "responder",
+});
 
   // ---------------- Session ----------------
   useEffect(() => {

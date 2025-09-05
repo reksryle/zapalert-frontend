@@ -8,6 +8,7 @@ import { MapContainer, TileLayer, Marker, Tooltip, useMap } from "react-leaflet"
 import L from "leaflet";
 import { Bell, Menu, X, LogOut, Home } from "lucide-react";
 import showAnnouncementToast from "../../utils/showAnnouncementToast";
+import usePushNotifications from "../../hooks/usePushNotifications";
 
 // ---------------- Map Helpers ----------------
 const markerIcon = new L.Icon({
@@ -254,6 +255,8 @@ const ResidentDashboard = () => {
   const announcementAudioRef = useRef(null);
   const audioInitialized = useRef(false);
 
+  usePushNotifications(user);
+
   // ---------------- Session ----------------
   useEffect(() => {
     axios
@@ -347,11 +350,23 @@ const ResidentDashboard = () => {
   const handleLogout = async () => {
     try {
       await axios.post("/auth/logout", {}, { withCredentials: true });
-    } catch {}
+
+      // Unregister service worker to stop push notifications
+      if ("serviceWorker" in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        for (const reg of registrations) {
+          await reg.unregister();
+        }
+      }
+    } catch (err) {
+      console.warn("Logout failed or already logged out:", err);
+    }
+
     localStorage.removeItem("resident-notifications");
     localStorage.removeItem("resident-hasNew");
     navigate("/");
   };
+
 
   // ---------------- Sidebar Links ----------------
   const links = [{ name: "Dashboard", path: "/resident", icon: <Home size={20} className="mr-3" /> }];
