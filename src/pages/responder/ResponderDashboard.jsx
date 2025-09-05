@@ -390,7 +390,7 @@ const ResponderDashboard = () => {
       {/* Main Content */}
       <div className="flex-1 p-6 overflow-y-auto relative">
         <div className="text-center mb-6">
-          <h1 className="text-4xl md:text-5xl font-extrabold text-red-800 mb-2 tracking-wide">Responder Dashboard</h1>
+          <h1 className="text-4xl md:text-5xl font-extrabold text-red-800 mb-2 tracking-wide">Responder <br />Dashboard</h1>
           <p className="text-lg text-gray-700">Welcome {fullName}!</p>
         </div>
 
