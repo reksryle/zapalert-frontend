@@ -287,8 +287,7 @@ const ResponderDashboard = () => {
   });
 
   const links = [
-    { name: "Dashboard", path: "/responder", icon: <Home size={20} className="mr-3" /> },
-    { name: "Profile", path: "/responder/profile", icon: <User size={20} className="mr-3" /> },
+    { name: "Dashboard", path: "/responder", icon: <Home size={20} className="mr-3" /> }
   ];
 
   const handleLogout = async () => {
