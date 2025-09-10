@@ -228,6 +228,7 @@ const EmergencyForm = ({ location, setLocation, user }) => {
 // ---------------- Main Dashboard ----------------
 const ResidentDashboard = () => {
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
   const locationRouter = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [user, setUser] = useState({
@@ -259,11 +260,16 @@ const ResidentDashboard = () => {
     axios
       .get("/auth/session", { withCredentials: true })
       .then((res) => {
-        if (res.data.role !== "resident") navigate("/");
-        else setUser(res.data);
+        if (res.data.role !== "resident") {
+          navigate("/");
+        } else {
+          setUser(res.data);
+          setLoading(false);   // ✅ mark session ready
+        }
       })
       .catch(() => navigate("/"));
   }, [navigate]);
+
 
   // ---------------- Geolocation ----------------
   useEffect(() => {
@@ -294,48 +300,55 @@ const ResidentDashboard = () => {
   }, []);
 
   // ---------------- Socket ----------------
-  useEffect(() => {
-    const socket = io(import.meta.env.VITE_SOCKET_URL, { withCredentials: true });
-    socket.emit("join-resident", user.username);
+useEffect(() => {
+  if (loading) return; // ✅ don’t connect until user is known
 
-    socket.on("notify-resident", (data) => {
-      const message = `🟡 Responder ${data.responderName} is on its way to your ${data.type} report!`;
-      toast.success(message, { duration: 6000 });
-      audioRef.current?.play().catch(() => {});
-      setNotifications((prev) => [{ message, timestamp: new Date().toLocaleString() }, ...prev]);
-      setHasNewNotif(true);
+  const socket = io(import.meta.env.VITE_SOCKET_URL, {
+    withCredentials: true,
+    query: { username: user.username },  // ✅ pass username immediately
+  });
+
+  socket.emit("join-resident", user.username);
+
+  socket.on("notify-resident", (data) => {
+    const message = `🟡 Responder ${data.responderName} is on its way to your ${data.type} report!`;
+    toast.success(message, { duration: 6000 });
+    audioRef.current?.play().catch(() => {});
+    setNotifications((prev) => [{ message, timestamp: new Date().toLocaleString() }, ...prev]);
+    setHasNewNotif(true);
+  });
+
+  socket.on("responded", (data) => {
+    const message = `🟢 Responder ${data.responderName} responded to your ${data.type} report.`;
+    toast.success(message, { duration: 6000 });
+    respondedAudioRef.current?.play().catch(() => {});
+    setNotifications((prev) => [{ message, timestamp: new Date().toLocaleString() }, ...prev]);
+    setHasNewNotif(true);
+  });
+
+  socket.on("declined", (data) => {
+    const message = `🔴 Responder ${data.responderName} declined your ${data.type} report.`;
+    toast.error(message, { duration: 6000 });
+    declinedAudioRef.current?.play().catch(() => {});
+    setNotifications((prev) => [{ message, timestamp: new Date().toLocaleString() }, ...prev]);
+    setHasNewNotif(true);
+  });
+
+  socket.on("public-announcement", (data) => {
+    showAnnouncementToast(data.message, () => {
+      announcementAudioRef.current.pause();
+      announcementAudioRef.current.currentTime = 0;
     });
+    setNotifications((prev) => [
+      { message: `𝗔𝗡𝗡𝗢𝗨𝗡𝗖𝗘𝗠𝗘𝗡𝗧: ${data.message}`, timestamp: new Date().toLocaleString() },
+      ...prev,
+    ]);
+    setHasNewNotif(true);
+  });
 
-    socket.on("responded", (data) => {
-      const message = `🟢 Responder ${data.responderName} responded to your ${data.type} report.`;
-      toast.success(message, { duration: 6000 });
-      respondedAudioRef.current?.play().catch(() => {});
-      setNotifications((prev) => [{ message, timestamp: new Date().toLocaleString() }, ...prev]);
-      setHasNewNotif(true);
-    });
+  return () => socket.disconnect();
+}, [loading, user.username]);
 
-    socket.on("declined", (data) => {
-      const message = `🔴 Responder ${data.responderName} declined your ${data.type} report.`;
-      toast.error(message, { duration: 6000 });
-      declinedAudioRef.current?.play().catch(() => {});
-      setNotifications((prev) => [{ message, timestamp: new Date().toLocaleString() }, ...prev]);
-      setHasNewNotif(true);
-    });
-
-    socket.on("public-announcement", (data) => {
-      showAnnouncementToast(data.message, () => {
-        announcementAudioRef.current.pause();
-        announcementAudioRef.current.currentTime = 0;
-      });
-      setNotifications((prev) => [
-        { message: `𝗔𝗡𝗡𝗢𝗨𝗡𝗖𝗘𝗠𝗘𝗡𝗧: ${data.message}`, timestamp: new Date().toLocaleString() },
-        ...prev,
-      ]);
-      setHasNewNotif(true);
-    });
-
-    return () => socket.disconnect();
-  }, [user.username]);
 
   // ---------------- Persist Notifications ----------------
   useEffect(() => {
