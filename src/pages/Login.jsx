@@ -4,9 +4,11 @@ import axios from "../api/axios";
 import { useNavigate, useLocation } from "react-router-dom";
 import { toast, ToastContainer, Slide } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import useNetworkStatus from "../hooks/useNetworkStatus";
 
 const Login = () => {
   const navigate = useNavigate();
+  const networkStatus = useNetworkStatus();
   const location = useLocation();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -42,7 +44,7 @@ const Login = () => {
 
   useEffect(() => {
     // ✅ Simulate a short loading time (1s)
-    const timer = setTimeout(() => setIsLoading(false), 1000);
+    const timer = setTimeout(() => setIsLoading(false), 2000);
 
     axios
       .get("/auth/session", { withCredentials: true })

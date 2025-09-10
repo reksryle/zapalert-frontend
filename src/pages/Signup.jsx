@@ -5,12 +5,15 @@ import { useNavigate } from "react-router-dom";
 import { toast, ToastContainer, Slide } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Select from "react-select";
+import useNetworkStatus from "../hooks/useNetworkStatus";
 
 const Signup = () => {
   const navigate = useNavigate();
-
-  // ✅ Loading screen state
+  const networkStatus = useNetworkStatus();
+  
+  // ✅ Loading screen & wait screen states
   const [isLoading, setIsLoading] = useState(true);
+  const [showWaitScreen, setShowWaitScreen] = useState(false);
 
   const [form, setForm] = useState({
     firstName: "",
@@ -41,15 +44,13 @@ const Signup = () => {
   ];
 
   useEffect(() => {
-    // Simulate a short loading time (1s)
-    const timer = setTimeout(() => setIsLoading(false), 1000);
+    const timer = setTimeout(() => setIsLoading(false), 2000);
     return () => clearTimeout(timer);
   }, []);
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
   const handleFileChange = (e) => setIdImage(e.target.files[0]);
 
-  // ✅ Toast style
   const toastStyle = {
     toastId: "signupToast",
     position: "top-center",
@@ -69,7 +70,7 @@ const Signup = () => {
       fontWeight: "500",
       textAlign: "center",
       boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
-      width: "240px",
+      width: "320px",
       marginTop: "20px",
     },
     closeButton: false,
@@ -78,6 +79,14 @@ const Signup = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (isSubmitting) return;
+
+    const requiredFields = ["firstName", "lastName", "age", "username", "password", "contactNumber", "barrio"];
+    for (let field of requiredFields) {
+      if (!form[field] || form[field].trim() === "") {
+        toast.error("Please fill in all required fields.", toastStyle);
+        return;
+      }
+    }
 
     const ageNum = parseInt(form.age);
     if (!idImage) {
@@ -96,6 +105,10 @@ const Signup = () => {
       toast.error("Username must include at least one letter, not all numbers.", toastStyle);
       return;
     }
+    if (/\s/.test(form.username)) {
+      toast.error("Username cannot have spaces.", toastStyle);
+      return;
+    }
 
     const formData = new FormData();
     Object.entries(form).forEach(([key, value]) => formData.append(key, value));
@@ -106,8 +119,16 @@ const Signup = () => {
       await axios.post(`${import.meta.env.VITE_API_URL}/auth/signup`, formData, {
         withCredentials: true,
       });
-      toast.success("Signup successful. Please wait for admin approval.", toastStyle);
-      setTimeout(() => navigate("/"), 2000);
+
+      toast.success("Signup successful!", toastStyle);
+
+      // ✅ After toast → wait screen → redirect
+      setTimeout(() => {
+        setShowWaitScreen(true);
+        setTimeout(() => {
+          navigate("/");
+        }, 10000);
+      }, 2500);
     } catch (err) {
       toast.error(err.response?.data?.message || "Signup failed.", toastStyle);
     } finally {
@@ -115,40 +136,20 @@ const Signup = () => {
     }
   };
 
-  const isFormIncomplete =
-    !form.firstName.trim() ||
-    !form.lastName.trim() ||
-    !form.age ||
-    !form.username.trim() ||
-    /^\d+$/.test(form.username) ||
-    !form.password.trim() ||
-    !form.contactNumber.trim() ||
-    !form.barrio ||
-    !idImage ||
-    !agree;
-
-  // ✅ Centered Minimal Modern ZapAlert Loader with Loading Text
+  // ✅ Loading screen
   if (isLoading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-red-600 to-red-800">
-
-        {/* Logo inside rotating ring */}
         <div className="relative w-48 h-48 flex items-center justify-center mb-6">
-          {/* Rotating ring */}
           <div className="absolute inset-0 rounded-full border-8 border-transparent border-t-yellow-400 animate-spin"></div>
-
-          {/* Logo */}
           <img
             src="/icons/zapalert-logo.png"
             alt="ZapAlert Logo"
             className="w-32 h-32 drop-shadow-[0_0_20px_rgba(0,0,0,0.8)] animate-bounce"
           />
         </div>
-
-        {/* Blinking Loading Text */}
         <p className="text-white text-2xl font-bold animate-blink">Loading...</p>
 
-        {/* Animations */}
         <style>
           {`
             @keyframes bounce {
@@ -158,7 +159,6 @@ const Signup = () => {
             .animate-bounce {
               animation: bounce 1s infinite;
             }
-
             @keyframes spin {
               0% { transform: rotate(0deg); }
               100% { transform: rotate(360deg); }
@@ -166,7 +166,6 @@ const Signup = () => {
             .animate-spin {
               animation: spin 2s linear infinite;
             }
-
             @keyframes blink {
               0%, 50%, 100% { opacity: 1; }
               25%, 75% { opacity: 0; }
@@ -174,18 +173,57 @@ const Signup = () => {
             .animate-blink {
               animation: blink 1s infinite;
             }
+            @keyframes slowblink {
+              0%, 100% { opacity: 1; }
+              50% { opacity: 0; }
+            }
+            .animate-slowblink {
+              animation: slowblink 2s infinite;
+            }
           `}
         </style>
       </div>
     );
   }
 
+  // ✅ Wait screen
+  if (showWaitScreen) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-red-600 to-red-800 text-center p-6">
+        <h2 className="text-white text-2xl font-extrabold tracking-wide drop-shadow-lg mb-4">
+          Thank you for signing up!
+        </h2>
+        <p className="text-white text-lg font-medium opacity-90 max-w-md mb-6">
+          You will receive an SMS soon from the Barangay about your account status.
+          Please wait for your account approval.
+        </p>
+        <p className="text-white text-base font-semibold animate-slowblink">
+          Redirecting to login...
+        </p>
+
+        <style>
+          {`
+            @keyframes slowblink {
+              0%, 100% { opacity: 1; }
+              50% { opacity: 0; }
+            }
+            .animate-slowblink {
+              animation: slowblink 2s infinite;
+            }
+          `}
+        </style>
+      </div>
+    );
+  }
+
+  // ✅ Signup form
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-600 to-red-800 flex items-center justify-center p-4 relative">
       <ToastContainer newestOnTop limit={3} />
 
       <form
         onSubmit={handleSubmit}
+        noValidate
         className="relative bg-white/90 backdrop-blur-md rounded-xl shadow-lg w-full max-w-md p-6 space-y-4"
       >
         <img
@@ -209,7 +247,6 @@ const Signup = () => {
               value={form.firstName}
               onChange={handleChange}
               className="w-full px-3 py-2 font-semibold text-gray-900 bg-transparent border-2 border-red-400 rounded-md focus:ring-2 focus:ring-red-500"
-              required
             />
             <input
               type="text"
@@ -218,21 +255,22 @@ const Signup = () => {
               value={form.lastName}
               onChange={handleChange}
               className="w-full px-3 py-2 font-semibold text-gray-900 bg-transparent border-2 border-red-400 rounded-md focus:ring-2 focus:ring-red-500"
-              required
             />
           </div>
 
           {/* Age */}
           <input
-            type="number"
+            type="text"
             name="age"
             placeholder="Age"
             value={form.age}
-            onChange={handleChange}
-            min="7"
-            max="100"
+            onChange={(e) => {
+              // ✅ Allow only digits
+              if (/^\d*$/.test(e.target.value)) {
+                handleChange(e);
+              }
+            }}
             className="w-full px-3 py-2 font-semibold text-gray-900 bg-transparent border-2 border-red-400 rounded-md focus:ring-2 focus:ring-red-500"
-            required
           />
 
           {/* Username */}
@@ -244,11 +282,7 @@ const Signup = () => {
               value={form.username}
               onChange={handleChange}
               className="w-full px-3 py-2 font-semibold text-gray-900 bg-transparent border-2 border-red-400 rounded-md focus:ring-2 focus:ring-red-500"
-              required
             />
-            <p className="text-xs text-gray-500 mt-1 text-center">
-              * Username must include letters (not all numbers)
-            </p>
           </div>
 
           {/* Password */}
@@ -260,7 +294,6 @@ const Signup = () => {
               value={form.password}
               onChange={handleChange}
               className="w-full px-3 py-2 font-semibold text-gray-900 bg-transparent border-2 border-red-400 rounded-md focus:ring-2 focus:ring-red-500 pr-12"
-              required
             />
             <button
               type="button"
@@ -273,7 +306,7 @@ const Signup = () => {
 
           {/* Contact */}
           <input
-            type="tel"
+            type="text"
             name="contactNumber"
             placeholder="Contact Number (09XXXXXXXXX)"
             value={form.contactNumber}
@@ -281,10 +314,8 @@ const Signup = () => {
               const value = e.target.value;
               if (/^\d{0,11}$/.test(value)) handleChange(e);
             }}
-            pattern="^09\d{9}$"
             maxLength={11}
             className="w-full px-3 py-2 font-semibold text-gray-900 bg-transparent border-2 border-red-400 rounded-md focus:ring-2 focus:ring-red-500"
-            required
           />
 
           {/* Barrio + Barangay */}
@@ -344,7 +375,6 @@ const Signup = () => {
                 accept="image/*"
                 onChange={handleFileChange}
                 className="hidden"
-                required
               />
               <span className="text-sm text-gray-600">
                 {idImage ? idImage.name : "No file chosen"}
@@ -365,7 +395,6 @@ const Signup = () => {
               checked={agree}
               onChange={(e) => setAgree(e.target.checked)}
               className="mt-1"
-              required
             />
             <span>
               I confirm that I am of legal age (18+) or a minor with consent.  
@@ -376,11 +405,9 @@ const Signup = () => {
           {/* Submit */}
           <button
             type="submit"
-            disabled={isFormIncomplete || isSubmitting}
+            disabled={isSubmitting}
             className={`w-full py-3 bg-gradient-to-r from-orange-400 to-red-600 text-white font-semibold rounded-md transition ${
-              isFormIncomplete || isSubmitting
-                ? "opacity-50 cursor-not-allowed"
-                : "hover:scale-105"
+              isSubmitting ? "opacity-50 cursor-not-allowed" : "hover:scale-105"
             }`}
           >
             {isSubmitting ? "Submitting..." : "Sign Up"}
