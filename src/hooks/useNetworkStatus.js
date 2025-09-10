@@ -1,4 +1,3 @@
-// hooks/useNetworkStatus.js
 import { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import { toast, Slide } from "react-toastify";
@@ -8,6 +7,7 @@ const BASE_URL = import.meta.env.VITE_API_URL;
 export default function useNetworkStatus() {
   const [status, setStatus] = useState("checking");
   const lastStatus = useRef("checking");
+  const hasBeenOffline = useRef(false); // ✅ track if we've ever been offline
   const toastId = "network-status";
 
   const toastStyle = (type) => ({
@@ -20,7 +20,7 @@ export default function useNetworkStatus() {
     draggable: true,
     transition: Slide,
     style: {
-      backgroundColor: type === "success" ? "#fff" : "#fff",
+      backgroundColor: "#fff",
       color: type === "success" ? "#16a34a" : "#b91c1c",
       border: `1px solid ${type === "success" ? "#16a34a" : "#f87171"}`,
       borderRadius: "12px",
@@ -49,6 +49,7 @@ export default function useNetworkStatus() {
         if (lastStatus.current !== "offline") {
           setStatus("offline");
           lastStatus.current = "offline";
+          hasBeenOffline.current = true; // ✅ mark that we've gone offline
           showToast("No connection", "error");
         }
         return;
@@ -60,12 +61,18 @@ export default function useNetworkStatus() {
         if (lastStatus.current !== "online") {
           setStatus("online");
           lastStatus.current = "online";
-          showToast("Connected to network", "success");
+
+          // ✅ only show "Connected" toast if we've ever been offline
+          if (hasBeenOffline.current) {
+            showToast("Connected to network", "success");
+            hasBeenOffline.current = false; // reset
+          }
         }
       } catch {
         if (lastStatus.current !== "offline") {
           setStatus("offline");
           lastStatus.current = "offline";
+          hasBeenOffline.current = true;
           showToast("No internet access", "error");
         }
       }
