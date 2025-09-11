@@ -13,6 +13,7 @@ const ReportIcon = new L.Icon({
 const ReportsLog = () => {
   const [reports, setReports] = useState([]);
   const [selectedReport, setSelectedReport] = useState(null);
+  const [showActions, setShowActions] = useState(false);
   const [statusFilter, setStatusFilter] = useState("all");
   const [searchKeyword, setSearchKeyword] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -22,9 +23,9 @@ const ReportsLog = () => {
   const reportsPerPage = 20;
 
   useEffect(() => {
-    fetchReports(); // initial load
-    const interval = setInterval(fetchReports, 2000); // auto-refresh every 2s
-    return () => clearInterval(interval); // cleanup
+    fetchReports();
+    const interval = setInterval(fetchReports, 2000);
+    return () => clearInterval(interval);
   }, []);
 
   const fetchReports = async () => {
@@ -132,12 +133,8 @@ const ReportsLog = () => {
       const created = new Date(report.createdAt);
       const today = new Date();
 
-      if (dateFilter === "latest") {
-        return true; // handled by sorting
-      }
-      if (dateFilter === "oldest") {
-        return true; // handled by sorting
-      }
+      if (dateFilter === "latest") return true;
+      if (dateFilter === "oldest") return true;
       if (dateFilter === "day") {
         return created.toDateString() === today.toDateString();
       }
@@ -161,7 +158,7 @@ const ReportsLog = () => {
       if (dateFilter === "oldest") {
         return new Date(a.createdAt) - new Date(b.createdAt);
       }
-      return new Date(b.createdAt) - new Date(a.createdAt); // latest first
+      return new Date(b.createdAt) - new Date(a.createdAt);
     });
 
   const totalPages = Math.ceil(filteredReports.length / reportsPerPage);
@@ -315,6 +312,12 @@ const ReportsLog = () => {
                 <strong>Status:</strong>{" "}
                 {selectedReport.status.replace("_", " ")}
               </p>
+                {selectedReport.resolvedAt && (
+              <p>
+                <strong>Resolved At:</strong>{" "}
+                {new Date(selectedReport.resolvedAt).toLocaleString()}
+              </p>
+              )}
               <p>
                 <strong>Description:</strong> {selectedReport.description}
               </p>
@@ -327,6 +330,18 @@ const ReportsLog = () => {
                 {new Date(selectedReport.createdAt).toLocaleString()}
               </p>
             </div>
+
+            {/* Open Responder Actions Modal */}
+            <div className="mt-4 flex justify-center">
+              <button
+                onClick={() => setShowActions(true)}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              >
+                View Responder Actions
+              </button>
+            </div>
+
+
             <div className="mt-4 h-64 w-full rounded overflow-hidden">
               <MapContainer
                 center={[selectedReport.latitude, selectedReport.longitude]}
@@ -336,16 +351,62 @@ const ReportsLog = () => {
               >
                 <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
                 <Marker
-                  position={[
-                    selectedReport.latitude,
-                    selectedReport.longitude,
-                  ]}
+                  position={[selectedReport.latitude, selectedReport.longitude]}
                   icon={ReportIcon}
                 >
                   <Popup>Emergency Location</Popup>
                 </Marker>
               </MapContainer>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Responder Actions Modal */}
+      {showActions && selectedReport && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+          onClick={() => setShowActions(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-md p-6 w-full max-w-lg shadow-lg relative"
+          >
+            <button
+              onClick={() => setShowActions(false)}
+              className="absolute top-3 right-3 text-gray-500 hover:text-red-600 text-xl"
+            >
+              ×
+            </button>
+            <h2 className="text-xl font-semibold mb-4">Responder Actions</h2>
+            {selectedReport.responders && selectedReport.responders.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="min-w-full border text-sm">
+                  <thead className="bg-gray-200">
+                    <tr>
+                      <th className="py-2 px-4 text-left">Responder</th>
+                      <th className="py-2 px-4 text-left">Action</th>
+                      <th className="py-2 px-4 text-left">Timestamp</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {selectedReport.responders.map((r, idx) => (
+                      <tr key={idx} className="hover:bg-gray-100">
+                        <td className="py-2 px-4">{r.fullName}</td>
+                        <td className="py-2 px-4 capitalize">
+                          {r.action.replace("_", " ")}
+                        </td>
+                        <td className="py-2 px-4">
+                          {new Date(r.timestamp).toLocaleString()}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="text-sm text-gray-600">No responder actions logged.</p>
+            )}
           </div>
         </div>
       )}
