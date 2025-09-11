@@ -154,7 +154,7 @@ const Login = () => {
     {
       img: "/tutorial/step1.gif",
       title: "Step 1: Install ZapAlert!",
-      desc: "In Chrome, tap the 3 dots (top-right), choose 'Add to Home screen', then tap Install.",
+      desc: "In Browser (Chrome), tap the 3 dots (top-right), choose 'Add to Home screen', then tap Install.",
     },
     {
       img: "/tutorial/step2.gif",
@@ -274,8 +274,8 @@ const Login = () => {
                   Welcome to ZapAlert!
                 </h3>
                 <p className="text-sm text-gray-600 text-center mb-4">
-                  ZapAlert is an emergency alert and monitoring system for
-                  Barangay Zapatera. It allows residents to
+                  ZapAlert is an emergency alert and monitoring system for{" "}
+                  <strong>Barangay Zapatera</strong>. It allows residents to
                   report incidents and ensures quick notifications for
                   responders. This is a CAPSTONE Project developed by students
                   from Asian College of Technology.
