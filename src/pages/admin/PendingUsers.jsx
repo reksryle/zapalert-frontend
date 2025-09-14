@@ -9,6 +9,10 @@ const PendingUsers = () => {
   const [pendingUsers, setPendingUsers] = useState([]);
   const [selectedImage, setSelectedImage] = useState(null);
 
+  // Modal state for rejecting user only
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalUserId, setModalUserId] = useState(null);
+
   const fetchPending = async () => {
     try {
       const res = await axios.get(`${BASE_URL}/auth/pending-users`, {
@@ -44,6 +48,17 @@ const PendingUsers = () => {
       toast.error("Failed to reject user.");
       console.error(error);
     }
+  };
+
+  // Open reject confirmation modal
+  const handleRejectClick = (id) => {
+    setModalUserId(id);
+    setModalOpen(true);
+  };
+
+  const handleConfirmReject = () => {
+    rejectUser(modalUserId);
+    setModalOpen(false);
   };
 
   useEffect(() => {
@@ -97,14 +112,16 @@ const PendingUsers = () => {
                     className="w-32 h-20 object-cover border rounded-md cursor-pointer hover:scale-105 transition-transform"
                     onClick={() => setSelectedImage(imgURL)}
                   />
+                  {/* Approve executes immediately */}
                   <button
                     onClick={() => approveUser(user._id)}
                     className="w-full bg-green-600 hover:bg-green-700 text-white text-sm py-1 rounded"
                   >
                     Approve
                   </button>
+                  {/* Reject opens modal */}
                   <button
-                    onClick={() => rejectUser(user._id)}
+                    onClick={() => handleRejectClick(user._id)}
                     className="w-full bg-red-600 hover:bg-red-700 text-white text-sm py-1 rounded"
                   >
                     Reject
@@ -140,6 +157,39 @@ const PendingUsers = () => {
           </div>
         </div>
       )}
+
+      {/* Reject Confirmation Modal */}
+      {modalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+          onClick={() => setModalOpen(false)}
+        >
+          <div
+            className="bg-white rounded-xl shadow-xl w-80 max-w-full p-6 border-t-4 border-red-600"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-center text-lg font-bold mb-3 text-gray-800">Reject User?</h2>
+            <p className="mb-5 text-center text-red-600">
+              Are you sure you want to reject this user? This action cannot be undone.
+            </p>
+            <div className="flex justify-center gap-3">
+              <button
+                className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 transition"
+                onClick={() => setModalOpen(false)}
+              >
+                Cancel
+              </button>
+              <button
+                className="px-4 py-2 rounded-lg text-white font-semibold transition bg-gradient-to-r from-red-500 via-red-600 to-red-700 hover:from-red-600 hover:to-red-800"
+                onClick={handleConfirmReject}
+              >
+                Reject
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };

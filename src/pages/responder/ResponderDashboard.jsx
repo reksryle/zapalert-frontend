@@ -91,12 +91,42 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, handleLogout, links, location })
 
 // ---------------- Emergency List ----------------
 const EmergencyList = () => {
-  const { reports, markAsOnTheWay, markAsResponded, declineReport } = useEmergencyReports(false);
+  const { reports, markAsOnTheWay, markAsResponded, declineReport } =
+    useEmergencyReports(false);
+
   const [onTheWayIds, setOnTheWayIds] = useState([]);
+  const [arrivedIds, setArrivedIds] = useState([]);
+
+  // 🔑 Persist ARRIVED state after refresh
+  useEffect(() => {
+    const currentResponder = JSON.parse(localStorage.getItem("zapalert-user"));
+    if (!currentResponder?._id) return;
+
+    const alreadyArrived = reports
+      .filter((r) =>
+        r.responders?.some(
+          (res) =>
+            res.responderId?.toString() === currentResponder._id &&
+            res.action === "arrived"
+        )
+      )
+      .map((r) => r._id);
+
+    setArrivedIds(alreadyArrived);
+  }, [reports]);
 
   const handleOnTheWay = (id, report) => {
     markAsOnTheWay(id, report);
     if (!onTheWayIds.includes(id)) setOnTheWayIds((prev) => [...prev, id]);
+  };
+
+  const handleArrived = async (id) => {
+    try {
+      await axios.patch(`/reports/${id}/arrived`, {}, { withCredentials: true });
+      setArrivedIds((prev) => [...prev, id]); // ✅ lock as ARRIVED
+    } catch (err) {
+      console.error("Arrived notify failed", err);
+    }
   };
 
   const formatPHTime = (isoString) =>
@@ -120,11 +150,15 @@ const EmergencyList = () => {
         <ul className="space-y-4">
           {reports.map((report) => {
             const isOnTheWay = onTheWayIds.includes(report._id);
+            const isArrived = arrivedIds.includes(report._id);
+
             return (
               <li
                 key={report._id}
                 className={`p-4 rounded shadow-inner flex justify-between items-start transition-all ${
-                  isOnTheWay ? "bg-yellow-100" : "bg-white hover:shadow-lg hover:bg-gray-50"
+                  isOnTheWay || isArrived
+                    ? "bg-yellow-100"
+                    : "bg-white hover:shadow-lg hover:bg-gray-50"
                 }`}
               >
                 <div>
@@ -135,20 +169,51 @@ const EmergencyList = () => {
                   </p>
                   <p className="text-sm text-gray-500">𝗔𝗴𝗲: {report.age ?? "N/A"}</p>
                   <p className="text-sm text-gray-500">𝗖𝗼𝗻𝘁𝗮𝗰𝘁: {report.contactNumber ?? "N/A"}</p>
-                  <p className="text-xs text-gray-400 mt-1">𝗥𝗲𝗽𝗼𝗿𝘁𝗲𝗱 𝗮𝘁: {formatPHTime(report.createdAt)}</p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    𝗥𝗲𝗽𝗼𝗿𝘁𝗲𝗱 𝗮𝘁: {formatPHTime(report.createdAt)}
+                  </p>
                 </div>
+
                 <div className="flex flex-col gap-1 text-xs">
+                  {!isOnTheWay && !isArrived && (
+                    <button
+                      type="button"
+                      onClick={() => handleOnTheWay(report._id, report)}
+                      className="text-blue-600 hover:underline"
+                    >
+                      𝗢𝗡 𝗧𝗛𝗘 𝗪𝗔𝗬
+                    </button>
+                  )}
+
+                  {isOnTheWay && !isArrived && (
+                    <button
+                      type="button"
+                      onClick={() => handleArrived(report._id)}
+                      className="text-purple-600 hover:underline"
+                    >
+                      ARRIVED?
+                    </button>
+                  )}
+
+                  {isArrived && (
+                    <button disabled className="font-bold text-green-700">
+                      𝗔𝗥𝗥𝗜𝗩𝗘𝗗
+                    </button>
+                  )}
+
                   <button
                     type="button"
-                    onClick={() => handleOnTheWay(report._id, report)}
-                    className="text-blue-600 hover:underline"
+                    onClick={() => markAsResponded(report._id)}
+                    className="text-green-600 hover:underline"
                   >
-                    𝗢𝗡 𝗧𝗛𝗘 𝗪𝗔𝗬
-                  </button>
-                  <button type="button" onClick={() => markAsResponded(report._id)} className="text-green-600 hover:underline">
                     𝗥𝗘𝗦𝗣𝗢𝗡𝗗𝗘𝗗
                   </button>
-                  <button type="button" onClick={() => declineReport(report._id)} className="text-red-600 hover:underline">
+
+                  <button
+                    type="button"
+                    onClick={() => declineReport(report._id)}
+                    className="text-red-600 hover:underline"
+                  >
                     𝗗𝗘𝗖𝗟𝗜𝗡𝗘
                   </button>
                 </div>
@@ -160,6 +225,7 @@ const EmergencyList = () => {
     </div>
   );
 };
+
 
 // ---------------- Map View ----------------
 const MapView = ({ responderNotifications, setResponderNotifications, hasNewNotif, setHasNewNotif }) => {
@@ -351,6 +417,9 @@ const ResponderDashboard = () => {
     );
     responderSocket.on("notify-responded", (data) =>
       pushNotif(data, "🟢 [responder] has responded to the [type] report of [resident]", "/sounds/responderresponded.mp3")
+    );
+    responderSocket.on("notify-arrived", (data) =>
+      pushNotif(data, "🔵 [responder] has arrived at the [type] report of [resident]", "/sounds/imhere.mp3")
     );
 
     return () => responderSocket.disconnect();

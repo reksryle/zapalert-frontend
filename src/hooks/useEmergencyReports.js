@@ -176,7 +176,20 @@ const useEmergencyReports = (enableToasts = false) => {
     }
   };
 
-  return { reports, markAsOnTheWay, markAsResponded, declineReport };
+  const markAsArrived = async (id) => {
+    try {
+      await axios.patch(`${API_URL}/reports/${id}/arrived`, {}, {
+        withCredentials: true,
+      });
+      toast.success("🔵 Status: Arrived at the scene");
+      // keep report visible for history / context
+      fetchReports();
+    } catch {
+      toast.error("❌ Failed to update arrived status");
+    }
+  };
+
+  return { reports, markAsOnTheWay, markAsResponded, declineReport, markAsArrived };
 };
 
 export default useEmergencyReports;
