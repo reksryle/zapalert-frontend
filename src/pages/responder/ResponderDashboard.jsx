@@ -159,52 +159,55 @@ const EmergencyList = ({ onTheWayIds, setOnTheWayIds, arrivedIds, setArrivedIds 
                   <p className="text-sm text-gray-500">𝗖𝗼𝗻𝘁𝗮𝗰𝘁: {report.contactNumber ?? "N/A"}</p>
                   <p className="text-xs text-gray-400 mt-1">𝗥𝗲𝗽𝗼𝗿𝘁𝗲𝗱 𝗮𝘁: {formatPHTime(report.createdAt)}</p>
                 </div>
-                <div className="flex flex-col gap-1 text-xs">
-                  {/* ON THE WAY always shows if not arrived */}
-                  {!isArrived && (
+                  <div className="flex flex-col gap-1 text-xs">
+                    {/* ON THE WAY always shows if not arrived */}
+                    {!isArrived && (
+                      <button
+                        type="button"
+                        onClick={() => handleOnTheWay(report._id, report)}
+                        className="text-blue-600 hover:underline"
+                      >
+                        𝗢𝗡 𝗧𝗛𝗘 𝗪𝗔𝗬
+                      </button>
+                    )}
+
+                    {/* ARRIVED? shows only if ON THE WAY but not arrived */}
+                    {isOnTheWay && !isArrived && (
+                      <button
+                        type="button"
+                        onClick={() => handleArrived(report._id)}
+                        className="text-purple-600 hover:underline ml-1"
+                      >
+                        ARRIVED?
+                      </button>
+                    )}
+
+                    {/* ARRIVED final state */}
+                    {isArrived && (
+                      <button disabled className="font-bold text-green-700">
+                        𝗔𝗥𝗥𝗜𝗩𝗘𝗗
+                      </button>
+                    )}
+
+                    {/* RESPONDED shows only if ON THE WAY (not before) */}
+                    {isOnTheWay && (
+                      <button
+                        type="button"
+                        onClick={() => markAsResponded(report._id)}
+                        className="text-green-600 hover:underline"
+                      >
+                        𝗥𝗘𝗦𝗣𝗢𝗡𝗗𝗘𝗗
+                      </button>
+                    )}
+
                     <button
                       type="button"
-                      onClick={() => handleOnTheWay(report._id, report)}
-                      className="text-blue-600 hover:underline"
+                      onClick={() => declineReport(report._id)}
+                      className="text-red-600 hover:underline"
                     >
-                      𝗢𝗡 𝗧𝗛𝗘 𝗪𝗔𝗬
+                      𝗗𝗘𝗖𝗟𝗜𝗡𝗘
                     </button>
-                  )}
-
-                  {/* ARRIVED? shows only if ON THE WAY but not arrived */}
-                  {isOnTheWay && !isArrived && (
-                    <button
-                      type="button"
-                      onClick={() => handleArrived(report._id)}
-                      className="text-purple-600 hover:underline ml-1"
-                    >
-                      ARRIVED?
-                    </button>
-                  )}
-
-                  {/* ARRIVED final state */}
-                  {isArrived && (
-                    <button disabled className="font-bold text-green-700">
-                      𝗔𝗥𝗥𝗜𝗩𝗘𝗗
-                    </button>
-                  )}
-
-                  <button
-                    type="button"
-                    onClick={() => markAsResponded(report._id)}
-                    className="text-green-600 hover:underline"
-                  >
-                    𝗥𝗘𝗦𝗣𝗢𝗡𝗗𝗘𝗗
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => declineReport(report._id)}
-                    className="text-red-600 hover:underline"
-                  >
-                    𝗗𝗘𝗖𝗟𝗜𝗡𝗘
-                  </button>
-                </div>
+                  </div>
               </li>
             );
           })}
@@ -415,6 +418,8 @@ const ResponderDashboard = () => {
       new Audio(soundFile).play().catch(() => {});
       setResponderNotifications((prev) => [{ ...data, message, timestamp: new Date().toLocaleString() }, ...prev]);
       setHasNewNotif(true);
+
+      toast(message);
     };
 
     responderSocket.on("responder-declined", (data) =>

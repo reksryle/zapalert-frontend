@@ -26,8 +26,6 @@ const AutoOpenMarker = ({
     return () => clearTimeout(timer);
   }, []);
 
-  const currentResponderId = JSON.parse(localStorage.getItem("zapalert-user"))?._id;
-
   // Determine states based on parent arrays
   const isOnTheWay = onTheWayIds.includes(report._id);
   const isArrived = arrivedIds.includes(report._id);
@@ -117,12 +115,15 @@ const AutoOpenMarker = ({
               </button>
             )}
 
-            <button
-              onClick={handleResponded}
-              className="text-green-600 text-xs hover:underline"
-            >
-              𝗥𝗘𝗦𝗣𝗢𝗡𝗗𝗘𝗗
-            </button>
+            {/* RESPONDED only if already ON THE WAY */}
+            {isOnTheWay && (
+              <button
+                onClick={handleResponded}
+                className="text-green-600 text-xs hover:underline"
+              >
+                𝗥𝗘𝗦𝗣𝗢𝗡𝗗𝗘𝗗
+              </button>
+            )}
 
             <button
               onClick={handleDecline}
