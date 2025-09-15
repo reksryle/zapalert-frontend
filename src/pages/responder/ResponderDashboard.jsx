@@ -1,4 +1,3 @@
-// src/pages/responder/ResponderDashboard.jsx
 import React, { useEffect, useState, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import axios from "../../api/axios";
@@ -7,7 +6,7 @@ import toast, { Toaster } from "react-hot-toast";
 import { MapContainer, TileLayer, Circle, useMap } from "react-leaflet";
 import L from "leaflet";
 import AutoOpenMarker from "../../components/AutoOpenMarker";
-import { Bell, Menu, X, Home, User, LogOut } from "lucide-react";
+import { Bell, Menu, X, Home, LogOut } from "lucide-react";
 import useEmergencyReports from "../../hooks/useEmergencyReports";
 import showAnnouncementToast from "../../utils/showAnnouncementToast";
 
@@ -46,7 +45,6 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, handleLogout, links, location })
       sidebarOpen ? "translate-x-0" : "-translate-x-full"
     }`}
   >
-    {/* Logo Section */}
     <div className="flex flex-col items-center justify-center p-6 border-b border-gray-200">
       <img src="/icons/zapalert-logo.png" alt="Logo" className="w-20 h-20 mb-2" />
       <h1 className="text-3xl font-extrabold tracking-widest text-red-600">ZAPALERT</h1>
@@ -55,7 +53,6 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, handleLogout, links, location })
       </button>
     </div>
 
-    {/* Navigation Links */}
     <nav className="flex-1 p-6 space-y-2 overflow-y-auto">
       {links.map((link) => (
         <button
@@ -75,7 +72,6 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, handleLogout, links, location })
       ))}
     </nav>
 
-    {/* Logout */}
     <div className="p-6 border-t border-gray-200">
       <button
         type="button"
@@ -90,14 +86,10 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, handleLogout, links, location })
 );
 
 // ---------------- Emergency List ----------------
-const EmergencyList = () => {
-  const { reports, markAsOnTheWay, markAsResponded, declineReport } =
-    useEmergencyReports(false);
+const EmergencyList = ({ onTheWayIds, setOnTheWayIds, arrivedIds, setArrivedIds }) => {
+  const { reports, markAsOnTheWay, markAsResponded, declineReport } = useEmergencyReports(false);
 
-  const [onTheWayIds, setOnTheWayIds] = useState([]);
-  const [arrivedIds, setArrivedIds] = useState([]);
-
-  // 🔑 Persist ARRIVED state after refresh
+  // Sync ARRIVED state
   useEffect(() => {
     const currentResponder = JSON.parse(localStorage.getItem("zapalert-user"));
     if (!currentResponder?._id) return;
@@ -113,19 +105,19 @@ const EmergencyList = () => {
       .map((r) => r._id);
 
     setArrivedIds(alreadyArrived);
-  }, [reports]);
+  }, [reports, setArrivedIds]);
 
   const handleOnTheWay = (id, report) => {
     markAsOnTheWay(id, report);
-    if (!onTheWayIds.includes(id)) setOnTheWayIds((prev) => [...prev, id]);
+    if (!onTheWayIds.includes(id)) setOnTheWayIds([...onTheWayIds, id]);
   };
 
   const handleArrived = async (id) => {
     try {
       await axios.patch(`/reports/${id}/arrived`, {}, { withCredentials: true });
-      setArrivedIds((prev) => [...prev, id]); // ✅ lock as ARRIVED
+      if (!arrivedIds.includes(id)) setArrivedIds([...arrivedIds, id]);
     } catch (err) {
-      console.error("Arrived notify failed", err);
+      console.error(err);
     }
   };
 
@@ -156,26 +148,20 @@ const EmergencyList = () => {
               <li
                 key={report._id}
                 className={`p-4 rounded shadow-inner flex justify-between items-start transition-all ${
-                  isOnTheWay || isArrived
-                    ? "bg-yellow-100"
-                    : "bg-white hover:shadow-lg hover:bg-gray-50"
+                  isOnTheWay || isArrived ? "bg-yellow-100" : "bg-white hover:shadow-lg hover:bg-gray-50"
                 }`}
               >
                 <div>
                   <p className="text-lg font-medium text-red-700">{report.type}</p>
                   <p className="text-sm text-gray-700">{report.description}</p>
-                  <p className="text-sm text-gray-500">
-                    𝗙𝗿𝗼𝗺: {report.firstName} {report.lastName}
-                  </p>
+                  <p className="text-sm text-gray-500">𝗙𝗿𝗼𝗺: {report.firstName} {report.lastName}</p>
                   <p className="text-sm text-gray-500">𝗔𝗴𝗲: {report.age ?? "N/A"}</p>
                   <p className="text-sm text-gray-500">𝗖𝗼𝗻𝘁𝗮𝗰𝘁: {report.contactNumber ?? "N/A"}</p>
-                  <p className="text-xs text-gray-400 mt-1">
-                    𝗥𝗲𝗽𝗼𝗿𝘁𝗲𝗱 𝗮𝘁: {formatPHTime(report.createdAt)}
-                  </p>
+                  <p className="text-xs text-gray-400 mt-1">𝗥𝗲𝗽𝗼𝗿𝘁𝗲𝗱 𝗮𝘁: {formatPHTime(report.createdAt)}</p>
                 </div>
-
                 <div className="flex flex-col gap-1 text-xs">
-                  {!isOnTheWay && !isArrived && (
+                  {/* ON THE WAY always shows if not arrived */}
+                  {!isArrived && (
                     <button
                       type="button"
                       onClick={() => handleOnTheWay(report._id, report)}
@@ -185,16 +171,18 @@ const EmergencyList = () => {
                     </button>
                   )}
 
+                  {/* ARRIVED? shows only if ON THE WAY but not arrived */}
                   {isOnTheWay && !isArrived && (
                     <button
                       type="button"
                       onClick={() => handleArrived(report._id)}
-                      className="text-purple-600 hover:underline"
+                      className="text-purple-600 hover:underline ml-1"
                     >
                       ARRIVED?
                     </button>
                   )}
 
+                  {/* ARRIVED final state */}
                   {isArrived && (
                     <button disabled className="font-bold text-green-700">
                       𝗔𝗥𝗥𝗜𝗩𝗘𝗗
@@ -226,15 +214,24 @@ const EmergencyList = () => {
   );
 };
 
-
 // ---------------- Map View ----------------
-const MapView = ({ responderNotifications, setResponderNotifications, hasNewNotif, setHasNewNotif }) => {
+const MapView = ({
+  responderNotifications,
+  setResponderNotifications,
+  hasNewNotif,
+  setHasNewNotif,
+  onTheWayIds,
+  setOnTheWayIds,
+  arrivedIds,
+  setArrivedIds
+}) => {
   const zapateraCenter = [10.306711119471714, 123.9011395473235];
   const { reports, markAsOnTheWay, markAsResponded, declineReport } = useEmergencyReports(true);
   const [showDropdown, setShowDropdown] = useState(false);
   const audioInitialized = useRef(false);
   const announcementAudioRef = useRef(null);
 
+  // Preload sounds once
   useEffect(() => {
     const allowAudio = () => {
       if (!audioInitialized.current) {
@@ -262,9 +259,16 @@ const MapView = ({ responderNotifications, setResponderNotifications, hasNewNoti
             key={report._id}
             report={report}
             icon={getIcon(report.type)}
-            onTheWay={markAsOnTheWay}
+            onTheWay={(id, r) => {
+              markAsOnTheWay(id, r);
+              if (!onTheWayIds.includes(id)) setOnTheWayIds([...onTheWayIds, id]);
+            }}
             onResponded={markAsResponded}
             onDecline={declineReport}
+            onTheWayIds={onTheWayIds}
+            arrivedIds={arrivedIds}
+            setOnTheWayIds={setOnTheWayIds}
+            setArrivedIds={setArrivedIds}
           />
         ))}
       </MapContainer>
@@ -352,6 +356,10 @@ const ResponderDashboard = () => {
     return responderNotifications.length > 0;
   });
 
+  // ---------------- Shared ON THE WAY / ARRIVED states ----------------
+  const [onTheWayIds, setOnTheWayIds] = useState([]);
+  const [arrivedIds, setArrivedIds] = useState([]);
+
   const links = [
     { name: "Dashboard", path: "/responder", icon: <Home size={20} className="mr-3" /> }
   ];
@@ -425,28 +433,10 @@ const ResponderDashboard = () => {
     return () => responderSocket.disconnect();
   }, [loading, username]);
 
-  // ---------------- Persist notifications ----------------
-  useEffect(() => {
-    localStorage.setItem("responder-notifications", JSON.stringify(responderNotifications));
-    localStorage.setItem("responder-hasNewNotif", JSON.stringify(hasNewNotif));
-  }, [responderNotifications, hasNewNotif]);
-
-  if (loading) return null;
+  if (loading) return <div>Loading...</div>;
 
   return (
     <div className="flex min-h-screen bg-gradient-to-b from-red-50 to-red-100">
-      <Toaster position="top-right" />
-
-      {/* Burger Button */}
-      <button
-        type="button"
-        onClick={() => setSidebarOpen(true)}
-        className="fixed top-4 left-4 z-[100] bg-gradient-to-r from-red-500 via-red-600 to-red-700 text-white p-2 rounded-md shadow-md hover:scale-105 transition-transform duration-200"
-      >
-        <Menu size={24} />
-      </button>
-
-      {/* Sidebar */}
       <Sidebar
         sidebarOpen={sidebarOpen}
         setSidebarOpen={setSidebarOpen}
@@ -455,22 +445,45 @@ const ResponderDashboard = () => {
         location={location}
       />
 
-      {/* Main Content */}
-      <div className="flex-1 p-6 overflow-y-auto relative">
+      <main className="flex-1 overflow-auto p-6">
+        <button
+          type="button"
+          onClick={() => setSidebarOpen(true)}
+          className="fixed top-4 left-4 z-[100] bg-gradient-to-r from-red-500 via-red-600 to-red-700 text-white p-2 rounded-md shadow-md hover:scale-105 transition-transform duration-200"
+        >
+          <Menu size={24} />
+        </button>
+
         <div className="text-center mb-6">
-          <h1 className="text-4xl md:text-5xl font-extrabold text-red-800 mb-2 tracking-wide">Responder <br />Dashboard</h1>
+          <h1 className="text-4xl md:text-5xl font-extrabold text-red-800 mb-2 tracking-wide">
+            Responder <br />Dashboard
+          </h1>
           <p className="text-lg text-gray-700">Welcome {fullName}!</p>
         </div>
 
-        <EmergencyList />
 
-        <MapView
-          responderNotifications={responderNotifications}
-          setResponderNotifications={setResponderNotifications}
-          hasNewNotif={hasNewNotif}
-          setHasNewNotif={setHasNewNotif}
-        />
-      </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <EmergencyList
+            onTheWayIds={onTheWayIds}
+            setOnTheWayIds={setOnTheWayIds}
+            arrivedIds={arrivedIds}
+            setArrivedIds={setArrivedIds}
+          />
+
+          <MapView
+            responderNotifications={responderNotifications}
+            setResponderNotifications={setResponderNotifications}
+            hasNewNotif={hasNewNotif}
+            setHasNewNotif={setHasNewNotif}
+            onTheWayIds={onTheWayIds}
+            setOnTheWayIds={setOnTheWayIds}
+            arrivedIds={arrivedIds}
+            setArrivedIds={setArrivedIds}
+          />
+        </div>
+      </main>
+
+      <Toaster position="top-right" />
     </div>
   );
 };
