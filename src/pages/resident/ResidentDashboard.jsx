@@ -214,6 +214,7 @@ const EmergencyForm = ({ location, setLocation, user, networkStatus, setZapStatu
       toast.error("❌ Failed to submit report.");
     } finally {
       setSubmitting(false);
+      setZapStatus?.("normal"); // Reset ZAP button status
     }
   };
 
@@ -237,58 +238,66 @@ const EmergencyForm = ({ location, setLocation, user, networkStatus, setZapStatu
     };
 
     setSubmitting(true);
-    setLoadingState("submitting");
-
-    // Immediately after submitting to backend, but before responder assignment
-    setLoadingState("waiting"); // waiting for responder assignment
-
-  if (networkStatus === "offline") {
-    if (!offlineToastId.current) {
-      offlineToastId.current = toast.loading(
-        "Report saved as draft. It will send automatically when connection is back.",
-        { duration: Infinity, icon: "📝" }
-      );
-    }
-    setPendingReport(reportData);
-    setZapStatus?.("loading"); // set ZAP button to loading
-    return;
-  }
-
+    
+    // Only show loading states if we're online
+    if (networkStatus === "online") {
+      setLoadingState("submitting");
+      // Immediately after submitting to backend, but before responder assignment
+      setLoadingState("waiting"); // waiting for responder assignment
       sendReport(reportData);
-    };
+    } else {
+      // Offline handling - just show the ripple button loading animation
+      setZapStatus?.("loading"); // set ZAP button to loading
+      
+      if (!offlineToastId.current) {
+        offlineToastId.current = toast.loading(
+          "Report saved as draft. It will send automatically when connection is back.",
+          { duration: Infinity, icon: "📝" }
+        );
+      }
+      setPendingReport(reportData);
+    }
+  };
 
-    // Retry pending report when back online
+  // Retry pending report when back online
   useEffect(() => {
     if (networkStatus === "online" && pendingReport) {
+      // Show the loading overlay when reconnecting and sending the draft
+      setLoadingState("submitting");
+      setLoadingState("waiting");
+      
       if (offlineToastId.current) {
         toast.dismiss(offlineToastId.current);
         offlineToastId.current = null;
       }
+      
       sendReport(pendingReport, true).then(() => {
         setZapStatus?.("normal"); // back to ZAP after sending
       });
     }
   }, [networkStatus, pendingReport]);
-    // Load draft from localStorage
-    useEffect(() => {
-      const draft = localStorage.getItem("resident-draft");
-      if (draft) {
-        const parsed = JSON.parse(draft);
-        setType(parsed.type || "");
-        setDescription(parsed.description || "");
-        if (parsed.pendingReport) {
-          setPendingReport(parsed.pendingReport);
-          setSubmitting(true);
-        }
-      }
-    }, []);
 
-    useEffect(() => {
-      localStorage.setItem(
-        "resident-draft",
-        JSON.stringify({ type, description, pendingReport })
-      );
-    }, [type, description, pendingReport]);
+  // Load draft from localStorage
+  useEffect(() => {
+    const draft = localStorage.getItem("resident-draft");
+    if (draft) {
+      const parsed = JSON.parse(draft);
+      setType(parsed.type || "");
+      setDescription(parsed.description || "");
+      if (parsed.pendingReport) {
+        setPendingReport(parsed.pendingReport);
+        setSubmitting(true);
+        setZapStatus?.("loading");
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem(
+      "resident-draft",
+      JSON.stringify({ type, description, pendingReport })
+    );
+  }, [type, description, pendingReport]);
 
   return (
     <div className="bg-gradient-to-br from-white via-red-50 to-orange-50 rounded-2xl shadow-lg p-3 mx-4 space-y-3 border border-red-100 backdrop-blur-lg mb-4">
