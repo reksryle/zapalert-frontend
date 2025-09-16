@@ -9,6 +9,7 @@ import AutoOpenMarker from "../../components/AutoOpenMarker";
 import { Bell, Menu, X, Home, LogOut } from "lucide-react";
 import useEmergencyReports from "../../hooks/useEmergencyReports";
 import showAnnouncementToast from "../../utils/showAnnouncementToast";
+import useNetworkStatus from "../../hooks/useNetworkStatus";
 
 // ---------------- Map Helper ----------------
 const iconMap = {
@@ -45,7 +46,8 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, handleLogout, links, location })
       sidebarOpen ? "translate-x-0" : "-translate-x-full"
     }`}
   >
-    <div className="flex flex-col items-center justify-center p-6 border-b border-gray-200">
+    {/* Logo Section */}
+    <div className="flex flex-col items-center justify-center p-6 border-b border-gray-200 relative">
       <img src="/icons/zapalert-logo.png" alt="Logo" className="w-20 h-20 mb-2" />
       <h1 className="text-3xl font-extrabold tracking-widest text-red-600">ZAPALERT</h1>
       <button type="button" onClick={() => setSidebarOpen(false)} className="absolute top-6 right-6">
@@ -53,6 +55,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, handleLogout, links, location })
       </button>
     </div>
 
+    {/* Navigation Links */}
     <nav className="flex-1 p-6 space-y-2 overflow-y-auto">
       {links.map((link) => (
         <button
@@ -70,8 +73,36 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, handleLogout, links, location })
           <span className="ml-2">{link.name}</span>
         </button>
       ))}
+
+      {/* Coming Soon Overlay Links */}
+      <div className="space-y-2 mt-2">
+        <button
+          type="button"
+          disabled
+          className="relative flex items-center w-full px-4 py-3 rounded-lg font-medium text-gray-400 bg-gray-50 cursor-not-allowed"
+        >
+          <img src="/icons/usericon.png" alt="Profile" className="w-5 h-5 mr-3" />
+          <span className="ml-2">Profile</span>
+          <span className="absolute top-0 right-0 bg-yellow-300 text-xs font-bold px-2 py-0.5 rounded-bl-lg">
+            Coming Soon
+          </span>
+        </button>
+
+        <button
+          type="button"
+          disabled
+          className="relative flex items-center w-full px-4 py-3 rounded-lg font-medium text-gray-400 bg-gray-50 cursor-not-allowed"
+        >
+          <img src="/icons/settingsicon.png" alt="Settings" className="w-5 h-5 mr-3" />
+          <span className="ml-2">Settings</span>
+          <span className="absolute top-0 right-0 bg-yellow-300 text-xs font-bold px-2 py-0.5 rounded-bl-lg">
+            Coming Soon
+          </span>
+        </button>
+      </div>
     </nav>
 
+    {/* Logout */}
     <div className="p-6 border-t border-gray-200">
       <button
         type="button"
@@ -85,9 +116,18 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, handleLogout, links, location })
   </div>
 );
 
-// ---------------- Emergency List ----------------
+
+// ---------------- Emergency List (Modified for Offline Support) ----------------
 const EmergencyList = ({ onTheWayIds, setOnTheWayIds, arrivedIds, setArrivedIds }) => {
   const { reports, markAsOnTheWay, markAsResponded, declineReport } = useEmergencyReports(false);
+
+  // Offline pending responses stored in localStorage
+  const [pendingResponses, setPendingResponses] = useState(
+    JSON.parse(localStorage.getItem("pendingResponses") || "[]")
+  );
+
+  // Track toast IDs for offline responses
+  const pendingToastIds = useRef({});
 
   // Sync ARRIVED state
   useEffect(() => {
@@ -107,18 +147,93 @@ const EmergencyList = ({ onTheWayIds, setOnTheWayIds, arrivedIds, setArrivedIds 
     setArrivedIds(alreadyArrived);
   }, [reports, setArrivedIds]);
 
-  const handleOnTheWay = (id, report) => {
-    markAsOnTheWay(id, report);
-    if (!onTheWayIds.includes(id)) setOnTheWayIds([...onTheWayIds, id]);
+  // ---------------- Offline & Auto-Send ----------------
+  const savePending = (reportId, action, reportName, residentName) => {
+    const updated = [...pendingResponses, { reportId, action, reportName, residentName }];
+    setPendingResponses(updated);
+    localStorage.setItem("pendingResponses", JSON.stringify(updated));
+
+    // Show persistent toast until sent
+    if (!pendingToastIds.current[reportId]) {
+      pendingToastIds.current[reportId] = toast.loading(
+        `Your response for ${reportName} will be sent to ${residentName} once online...`,
+        { duration: Infinity }
+      );
+    }
   };
 
-  const handleArrived = async (id) => {
-    try {
-      await axios.patch(`/reports/${id}/arrived`, {}, { withCredentials: true });
-      if (!arrivedIds.includes(id)) setArrivedIds([...arrivedIds, id]);
-    } catch (err) {
-      console.error(err);
+
+  const sendPending = async () => {
+    if (!navigator.onLine || pendingResponses.length === 0) return;
+
+    const remaining = [];
+    for (let p of pendingResponses) {
+      try {
+        if (p.action === "on_the_way") await markAsOnTheWay(p.reportId, reports.find(r => r._id === p.reportId));
+        else if (p.action === "responded") await markAsResponded(p.reportId);
+        else if (p.action === "declined") await declineReport(p.reportId);
+        else if (p.action === "arrived") await axios.patch(`/reports/${p.reportId}/arrived`, {}, { withCredentials: true });
+
+        // Dismiss the pending toast and show success
+        if (pendingToastIds.current[p.reportId]) {
+          toast.dismiss(pendingToastIds.current[p.reportId]);
+          toast.success(`Your response for "${p.reportName}" has been submitted.`);
+          delete pendingToastIds.current[p.reportId];
+        }
+      } catch {
+        remaining.push(p); // keep failed ones
+      }
     }
+    setPendingResponses(remaining);
+    localStorage.setItem("pendingResponses", JSON.stringify(remaining));
+  };
+
+  useEffect(() => {
+    window.addEventListener("online", sendPending);
+    sendPending(); // attempt on mount
+    return () => window.removeEventListener("online", sendPending);
+  }, [pendingResponses]);
+
+  // ---------------- Modified Handlers ----------------
+  const handleOnTheWay = (id, report) => {
+    if (navigator.onLine) {
+      markAsOnTheWay(id, report);
+      if (!onTheWayIds.includes(id)) setOnTheWayIds([...onTheWayIds, id]);
+      // ✅ REMOVE this toast, it will only show after offline draft is sent
+      // toast.success(`Your response for "${report.type} Report" has been submitted to "${report.firstName} ${report.lastName}".`);
+    } else {
+      savePending(id, "on_the_way", `${report.type} Report`, `${report.firstName} ${report.lastName}`);
+      if (!onTheWayIds.includes(id)) setOnTheWayIds([...onTheWayIds, id]);
+    }
+  };
+
+  const handleResponded = (id, report) => {
+    if (navigator.onLine) {
+      markAsResponded(id);
+      // ✅ REMOVE immediate toast
+      // toast.success(`Your response for "${report.type} Report" has been submitted.`);
+    } else savePending(id, "responded", `${report.type} Report`);
+  };
+
+  const handleDecline = (id, report) => {
+    if (navigator.onLine) {
+      declineReport(id);
+      // ✅ REMOVE immediate toast
+      // toast.success(`Your response for "${report.type} Report" has been submitted.`);
+    } else savePending(id, "declined", `${report.type} Report`);
+  };
+
+  const handleArrived = async (id, report) => {
+    if (navigator.onLine) {
+      try {
+        await axios.patch(`/reports/${id}/arrived`, {}, { withCredentials: true });
+        if (!arrivedIds.includes(id)) setArrivedIds([...arrivedIds, id]);
+        // ✅ REMOVE immediate toast
+        // toast.success(`Your response for "${report.type} Report" has been submitted.`);
+      } catch (err) {
+        savePending(id, "arrived", `${report.type} Report`);
+      }
+    } else savePending(id, "arrived", `${report.type} Report`);
   };
 
   const formatPHTime = (isoString) =>
@@ -152,62 +267,58 @@ const EmergencyList = ({ onTheWayIds, setOnTheWayIds, arrivedIds, setArrivedIds 
                 }`}
               >
                 <div>
-                  <p className="text-lg font-medium text-red-700">{report.type}</p>
+                  <p className="text-lg font-medium text-red-700">{report.type} Report</p>
                   <p className="text-sm text-gray-700">{report.description}</p>
                   <p className="text-sm text-gray-500">𝗙𝗿𝗼𝗺: {report.firstName} {report.lastName}</p>
                   <p className="text-sm text-gray-500">𝗔𝗴𝗲: {report.age ?? "N/A"}</p>
                   <p className="text-sm text-gray-500">𝗖𝗼𝗻𝘁𝗮𝗰𝘁: {report.contactNumber ?? "N/A"}</p>
                   <p className="text-xs text-gray-400 mt-1">𝗥𝗲𝗽𝗼𝗿𝘁𝗲𝗱 𝗮𝘁: {formatPHTime(report.createdAt)}</p>
                 </div>
-                  <div className="flex flex-col gap-1 text-xs">
-                    {/* ON THE WAY always shows if not arrived */}
-                    {!isArrived && (
-                      <button
-                        type="button"
-                        onClick={() => handleOnTheWay(report._id, report)}
-                        className="text-blue-600 hover:underline"
-                      >
-                        𝗢𝗡 𝗧𝗛𝗘 𝗪𝗔𝗬
-                      </button>
-                    )}
-
-                    {/* ARRIVED? shows only if ON THE WAY but not arrived */}
-                    {isOnTheWay && !isArrived && (
-                      <button
-                        type="button"
-                        onClick={() => handleArrived(report._id)}
-                        className="text-purple-600 hover:underline ml-1"
-                      >
-                        ARRIVED?
-                      </button>
-                    )}
-
-                    {/* ARRIVED final state */}
-                    {isArrived && (
-                      <button disabled className="font-bold text-green-700">
-                        𝗔𝗥𝗥𝗜𝗩𝗘𝗗
-                      </button>
-                    )}
-
-                    {/* RESPONDED shows only if ON THE WAY (not before) */}
-                    {isOnTheWay && (
-                      <button
-                        type="button"
-                        onClick={() => markAsResponded(report._id)}
-                        className="text-green-600 hover:underline"
-                      >
-                        𝗥𝗘𝗦𝗣𝗢𝗡𝗗𝗘𝗗
-                      </button>
-                    )}
-
+                <div className="flex flex-col gap-2 text-xs">
+                  {!isArrived && (
                     <button
                       type="button"
-                      onClick={() => declineReport(report._id)}
-                      className="text-red-600 hover:underline"
+                      onClick={() => handleOnTheWay(report._id, report)}
+                      className="px-3 py-1 rounded-lg bg-blue-100 text-blue-700 font-semibold hover:bg-blue-200 transition"
                     >
-                      𝗗𝗘𝗖𝗟𝗜𝗡𝗘
+                      𝗢𝗡 𝗧𝗛𝗘 𝗪𝗔𝗬
                     </button>
-                  </div>
+                  )}
+                  {isOnTheWay && !isArrived && !pendingResponses.some(p => p.reportId === report._id && p.action === "on_the_way") && (
+                    <button
+                      type="button"
+                      onClick={() => handleArrived(report._id, report)}
+                      className="px-3 py-1 rounded-lg bg-purple-100 text-purple-700 font-semibold hover:bg-purple-200 transition"
+                    >
+                      ARRIVE?
+                    </button>
+                  )}
+                  {isArrived && (
+                    <button
+                      disabled
+                      className="px-3 py-1 rounded-lg bg-green-200 text-green-700 font-bold cursor-default"
+                    >
+                      𝗔𝗥𝗥𝗜𝗩𝗘𝗗
+                    </button>
+                  )}
+                  {isOnTheWay &&
+                  !pendingResponses.some(p => p.reportId === report._id && p.action === "on_the_way") && (
+                    <button
+                      type="button"
+                      onClick={() => handleResponded(report._id, report)}
+                      className="px-3 py-1 rounded-lg bg-green-100 text-green-700 font-semibold hover:bg-green-200 transition"
+                    >
+                      𝗥𝗘𝗦𝗣𝗢𝗡𝗗𝗘𝗗
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => handleDecline(report._id, report)}
+                    className="px-3 py-1 rounded-lg bg-red-100 text-red-700 font-semibold hover:bg-red-200 transition"
+                  >
+                    𝗗𝗘𝗖𝗟𝗜𝗡𝗘
+                  </button>
+                </div>
               </li>
             );
           })}
@@ -216,6 +327,7 @@ const EmergencyList = ({ onTheWayIds, setOnTheWayIds, arrivedIds, setArrivedIds 
     </div>
   );
 };
+
 
 // ---------------- Map View ----------------
 const MapView = ({
@@ -306,34 +418,34 @@ const MapView = ({
               <span className="absolute top-0 right-0 block h-3 w-3 rounded-full bg-red-600 border-2 border-white"></span>
             )}
           </button>
-          {showDropdown && (
-            <div className="absolute right-0 mt-2 w-80 bg-white/90 backdrop-blur-sm shadow-xl border rounded-xl z-[200]">
-              <div className="p-3 font-semibold border-b">Notifications</div>
-              <ul className="max-h-60 overflow-y-auto">
-                {responderNotifications.length === 0 ? (
-                  <li className="p-3 text-gray-500">No notifications</li>
-                ) : (
-                  responderNotifications.map((note, idx) => (
-                    <li key={idx} className="p-3 border-b text-sm">
-                      {note.message}
-                      <div className="text-xs text-gray-400 mt-1">{note.timestamp}</div>
-                    </li>
-                  ))
-                )}
-              </ul>
-              <button
-                onClick={() => {
-                  setResponderNotifications([]);
-                  localStorage.removeItem("responder-notifications");
-                  localStorage.removeItem("responder-hasNewNotif");
-                  setHasNewNotif(false);
-                }}
-                className="w-full text-center py-2 text-sm text-red-600 hover:bg-gray-100"
-              >
-                Clear All
-              </button>
-            </div>
-          )}
+        {showDropdown && (
+          <div className="absolute right-0 mt-2 w-80 max-w-[90vw] bg-white/90 backdrop-blur-md shadow-2xl border rounded-2xl z-[200]">
+            <div className="p-3 font-semibold border-b">Notifications</div>
+            <ul className="max-h-60 overflow-y-auto">
+              {responderNotifications.length === 0 ? (
+                <li className="p-3 text-gray-500">No notifications</li>
+              ) : (
+                responderNotifications.map((note, idx) => (
+                  <li key={idx} className="p-3 border-b text-sm">
+                    {note.message}
+                    <div className="text-xs text-gray-400 mt-1">{note.timestamp}</div>
+                  </li>
+                ))
+              )}
+            </ul>
+            <button
+              onClick={() => {
+                setResponderNotifications([]);
+                localStorage.removeItem("responder-notifications");
+                localStorage.removeItem("responder-hasNewNotif");
+                setHasNewNotif(false);
+              }}
+              className="w-full text-center py-2 text-sm text-red-600 hover:bg-gray-100 rounded-b-2xl"
+            >
+              Clear All
+            </button>
+          </div>
+        )}
         </div>
       </div>
     </div>
@@ -348,6 +460,11 @@ const ResponderDashboard = () => {
   const [username, setUsername] = useState("");
   const [fullName, setFullName] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const networkStatus = useNetworkStatus();
+  const wasOffline = useRef(false);
+  const onlineTimeout = useRef(null);
+  const [showTutorial, setShowTutorial] = useState(false);
+  
 
   const [responderNotifications, setResponderNotifications] = useState(() => {
     const stored = localStorage.getItem("responder-notifications");
@@ -358,6 +475,35 @@ const ResponderDashboard = () => {
     if (stored !== null) return JSON.parse(stored);
     return responderNotifications.length > 0;
   });
+
+  // ---------------- Network Toast ----------------
+ useEffect(() => {
+  let id;
+  if (networkStatus === "offline") {
+    wasOffline.current = true;
+    if (onlineTimeout.current) {
+      clearTimeout(onlineTimeout.current);
+      onlineTimeout.current = null;
+    }
+    id = toast.loading("No connection", { duration: Infinity });
+  } else if (networkStatus === "online") {
+    if (wasOffline.current) {
+      onlineTimeout.current = setTimeout(() => {
+        toast.dismiss();
+        toast.success("Connected to network");
+        wasOffline.current = false;
+        onlineTimeout.current = null;
+      }, 2000);
+    } else {
+      toast.dismiss();
+    }
+  }
+  return () => {
+    if (id) toast.dismiss(id);
+    if (onlineTimeout.current) clearTimeout(onlineTimeout.current);
+  };
+}, [networkStatus]);
+
 
   // ---------------- Shared ON THE WAY / ARRIVED states ----------------
   const [onTheWayIds, setOnTheWayIds] = useState([]);
@@ -373,8 +519,12 @@ const ResponderDashboard = () => {
     } catch {
       console.warn("Logout failed or already logged out.");
     }
+    setShowTutorial(false); 
     localStorage.removeItem("responder-notifications");
     localStorage.removeItem("responder-hasNewNotif");
+
+    sessionStorage.removeItem("responderTutorialShown");
+
     navigate("/");
   };
 
@@ -383,11 +533,21 @@ const ResponderDashboard = () => {
     axios
       .get("/auth/session", { withCredentials: true })
       .then((res) => {
-        if (res.data.role !== "responder") navigate("/");
-        else {
-          setFullName(`${res.data.firstName} ${res.data.lastName}`);
+        if (res.data.role !== "responder") {
+          navigate("/");
+        } else {
           setUsername(res.data.username);
-          setLoading(false);
+          setFullName(res.data.firstName + " " + res.data.lastName);
+
+setTimeout(() => {
+  setLoading(false);
+
+  // Show tutorial only once per session
+  if (!sessionStorage.getItem("responderTutorialShown")) {
+    setShowTutorial(true);
+    sessionStorage.setItem("responderTutorialShown", "true");
+  }
+}, 2000);
         }
       })
       .catch(() => navigate("/"));
@@ -438,7 +598,46 @@ const ResponderDashboard = () => {
     return () => responderSocket.disconnect();
   }, [loading, username]);
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) {
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-red-600 to-red-800">
+      <div className="relative w-48 h-48 flex items-center justify-center mb-6">
+        <div className="absolute inset-0 rounded-full border-8 border-transparent border-t-yellow-400 animate-spin"></div>
+        <img
+          src="/icons/zapalert-logo.png"
+          alt="ZapAlert Logo"
+          className="w-32 h-32 drop-shadow-[0_0_20px_rgba(0,0,0,0.8)] animate-bounce"
+        />
+      </div>
+      <p className="text-white text-2xl font-bold animate-blink">Loading...</p>
+
+      <style>
+        {`
+          @keyframes bounce { 0%,100%{transform:translateY(0);}50%{transform:translateY(-15px);} }
+          .animate-bounce { animation: bounce 1s infinite; }
+
+          @keyframes spin { 0%{transform:rotate(0deg);}100%{transform:rotate(360deg);} }
+          .animate-spin { animation: spin 2s linear infinite; }
+
+          @keyframes blink { 0%,50%,100%{opacity:1;}25%,75%{opacity:0;} }
+          .animate-blink { animation: blink 1s infinite; }
+
+          @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+          .animate-fadeIn { animation: fadeIn 0.5s ease-in-out forwards; }
+
+          @keyframes popupIn {
+            0% { transform: scale(0.8); opacity: 0; }
+            60% { transform: scale(1.05); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+          }
+          .animate-popupIn {
+            animation: popupIn 0.4s ease-out forwards;
+          }
+        `}
+      </style>
+    </div>
+  );
+}
 
   return (
     <div className="flex min-h-screen bg-gradient-to-b from-red-50 to-red-100">
@@ -487,7 +686,41 @@ const ResponderDashboard = () => {
           />
         </div>
       </main>
+      {/* ---------------- Tutorial Popup ---------------- */}
+      {showTutorial && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999] animate-fadeIn">
+          <div className="bg-white/90 backdrop-blur-md rounded-3xl max-w-sm w-full p-6 space-y-5 text-gray-800 relative shadow-2xl transform scale-95 animate-popupIn border border-white/30">
+            
+            {/* Accent bar */}
+            <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-2 w-16 h-1 rounded-full bg-red-600 shadow-md"></div>
 
+            {/* Title */}
+            <h3 className="text-2xl font-extrabold text-red-700 text-center">
+              Enable Location
+            </h3>
+
+            {/* Description */}
+            <p className="text-sm text-gray-700 text-center leading-relaxed">
+              To use ZapAlert effectively, please turn on your device's location so emergencies can be handled quickly.
+            </p>
+
+            {/* Image / GIF */}
+            <img
+              src="/tutorial/turnlocation.gif"
+              alt="Enable Location"
+              className="w-full rounded-xl shadow-lg border border-gray-200"
+            />
+
+            {/* Button */}
+            <button
+              onClick={() => setShowTutorial(false)}
+              className="w-full py-3 bg-gradient-to-r from-red-600 via-red-500 to-orange-400 text-white font-bold rounded-xl shadow-lg hover:scale-105 hover:shadow-xl transition transform duration-300"
+            >
+              Got it
+            </button>
+          </div>
+        </div>
+      )}
       <Toaster position="top-right" />
     </div>
   );

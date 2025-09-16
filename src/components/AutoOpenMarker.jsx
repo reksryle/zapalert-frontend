@@ -81,20 +81,7 @@ const AutoOpenMarker = ({
       <Popup className={popupBg}>
         <div className="text-sm">
           <div className="flex items-center justify-between">
-            <strong>{report.type}</strong>
-            {isOnTheWay && !isArrived && (
-              <button
-                onClick={handleArrived}
-                className="text-purple-600 text-xs hover:underline ml-2"
-              >
-                ARRIVED?
-              </button>
-            )}
-            {isArrived && (
-              <button disabled className="font-bold text-green-700 text-xs ml-2">
-                𝗔𝗥𝗥𝗜𝗩𝗘𝗗
-              </button>
-            )}
+            <strong>{report.type} Report</strong>
           </div>
 
           <div>{report.description}</div>
@@ -104,34 +91,50 @@ const AutoOpenMarker = ({
           <div className="text-xs text-gray-400 mt-1">
             𝗥𝗲𝗽𝗼𝗿𝘁𝗲𝗱 𝗮𝘁: {formatPHTime(report.createdAt)}
           </div>
+            <div className="flex gap-1 mt-2 flex-wrap">
+              {!isArrived && (
+                <button
+                  onClick={handleOnTheWay}
+                  className="px-1.5 py-0.5 rounded-md bg-blue-100 text-blue-700 font-semibold hover:bg-blue-200 transition text-[10px]"
+                >
+                  𝗢𝗡 𝗧𝗛𝗘 𝗪𝗔𝗬
+                </button>
+              )}
 
-          <div className="flex gap-2 mt-2">
-            {!isArrived && (
+              {isOnTheWay && !isArrived && (
+                <button
+                  onClick={handleArrived}
+                  className="px-1.5 py-0.5 rounded-md bg-purple-100 text-purple-700 font-semibold hover:bg-purple-200 transition text-[10px]"
+                >
+                  ARRIVE?
+                </button>
+              )}
+
+              {isArrived && (
+                <button
+                  disabled
+                  className="px-1.5 py-0.5 rounded-md bg-green-200 text-green-700 font-bold cursor-default text-[10px]"
+                >
+                  𝗔𝗥𝗥𝗜𝗩𝗘𝗗
+                </button>
+              )}
+
+              {isOnTheWay && (
+                <button
+                  onClick={handleResponded}
+                  className="px-1.5 py-0.5 rounded-md bg-green-100 text-green-700 font-semibold hover:bg-green-200 transition text-[10px]"
+                >
+                  𝗥𝗘𝗦𝗣𝗢𝗡𝗗𝗘𝗗
+                </button>
+              )}
+
               <button
-                onClick={handleOnTheWay}
-                className="text-blue-600 text-xs hover:underline"
+                onClick={handleDecline}
+                className="px-1.5 py-0.5 rounded-md bg-red-100 text-red-700 font-semibold hover:bg-red-200 transition text-[10px]"
               >
-                𝗢𝗡 𝗧𝗛𝗘 𝗪𝗔𝗬
+                𝗗𝗘𝗖𝗟𝗜𝗡𝗘
               </button>
-            )}
-
-            {/* RESPONDED only if already ON THE WAY */}
-            {isOnTheWay && (
-              <button
-                onClick={handleResponded}
-                className="text-green-600 text-xs hover:underline"
-              >
-                𝗥𝗘𝗦𝗣𝗢𝗡𝗗𝗘𝗗
-              </button>
-            )}
-
-            <button
-              onClick={handleDecline}
-              className="text-red-600 text-xs hover:underline"
-            >
-              𝗗𝗘𝗖𝗟𝗜𝗡𝗘
-            </button>
-          </div>
+            </div>
         </div>
       </Popup>
     </Marker>
