@@ -1,7 +1,16 @@
+// frontend/src/pages/admin/AdminDashboard.jsx
 import React, { useEffect, useState } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import axios from "../../api/axios";
-import { Menu, X, UserCheck, Users, FileText, Megaphone, LogOut, Home } from "lucide-react";
+import {
+  Menu,
+  X,
+  UserCheck,
+  Users,
+  FileText,
+  Megaphone,
+  LogOut,
+} from "lucide-react";
 
 // ---------------- Sidebar ----------------
 const Sidebar = ({ sidebarOpen, setSidebarOpen, handleLogout, links, location }) => (
@@ -12,9 +21,17 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, handleLogout, links, location })
   >
     {/* Logo Section */}
     <div className="flex flex-col items-center justify-center p-6 border-b border-red-100 relative bg-gradient-to-r from-red-500 via-red-600 to-orange-500 text-white">
-      <img src="/icons/zapalert-logo.png" alt="Logo" className="w-20 h-20 mb-2 drop-shadow-lg" />
+      <img
+        src="/icons/zapalert-logo.png"
+        alt="Logo"
+        className="w-20 h-20 mb-2 drop-shadow-lg"
+      />
       <h1 className="text-3xl font-black tracking-wider">ZAPALERT</h1>
-      <button type="button" onClick={() => setSidebarOpen(false)} className="absolute top-6 right-6 hover:bg-white/20 p-1 rounded-full transition-all">
+      <button
+        type="button"
+        onClick={() => setSidebarOpen(false)}
+        className="absolute top-6 right-6 hover:bg-white/20 p-1 rounded-full transition-all"
+      >
         <X size={24} className="text-white" />
       </button>
     </div>
@@ -29,8 +46,8 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, handleLogout, links, location })
             setSidebarOpen(false);
           }}
           className={`flex items-center w-full px-6 py-4 rounded-2xl font-semibold transition-all duration-300 hover:scale-105 hover:shadow-lg ${
-            location.pathname === link.path 
-              ? "bg-gradient-to-r from-red-500 to-orange-500 text-white shadow-lg transform scale-105" 
+            location.pathname === link.path
+              ? "bg-gradient-to-r from-red-500 to-orange-500 text-white shadow-lg transform scale-105"
               : "text-gray-700 hover:bg-gradient-to-r hover:from-red-100 hover:to-orange-100 hover:text-red-700"
           }`}
         >
@@ -59,6 +76,7 @@ const AdminDashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   // 🔑 Links for admin
   const links = [
@@ -68,17 +86,11 @@ const AdminDashboard = () => {
     { name: "Announce", path: "/admin/announcement", icon: <Megaphone size={20} /> },
   ];
 
-  // ✅ Logout handler
-  const handleLogout = async () => {
-    try {
-      await axios.post("/auth/logout", {}, { withCredentials: true });
-    } catch {
-      console.warn("Logout failed or already logged out.");
-    }
-    localStorage.removeItem("zapalertRole");
-    localStorage.removeItem("user");
-    navigate("/");
-  };
+  // ✅ Loading screen timer
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoading(false), 1000);
+    return () => clearTimeout(timer);
+  }, []);
 
   // ✅ Session check
   useEffect(() => {
@@ -93,6 +105,49 @@ const AdminDashboard = () => {
     };
     checkSession();
   }, [navigate]);
+
+  // ✅ Show loading screen
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-red-600 to-red-800">
+        <div className="relative w-48 h-48 flex items-center justify-center mb-6">
+          <div className="absolute inset-0 rounded-full border-8 border-transparent border-t-yellow-400 animate-spin"></div>
+          <img
+            src="/icons/zapalert-logo.png"
+            alt="ZapAlert Logo"
+            className="w-32 h-32 drop-shadow-[0_0_20px_rgba(0,0,0,0.8)] animate-bounce"
+          />
+        </div>
+        <p className="text-white text-2xl font-bold animate-blink">Loading...</p>
+
+        <style>
+          {`
+            @keyframes bounce {
+              0%, 100% { transform: translateY(0); }
+              50% { transform: translateY(-15px); }
+            }
+            .animate-bounce {
+              animation: bounce 1s infinite;
+            }
+            @keyframes spin {
+              0% { transform: rotate(0deg); }
+              100% { transform: rotate(360deg); }
+            }
+            .animate-spin {
+              animation: spin 2s linear infinite;
+            }
+            @keyframes blink {
+              0%, 50%, 100% { opacity: 1; }
+              25%, 75% { opacity: 0; }
+            }
+            .animate-blink {
+              animation: blink 1s infinite;
+            }
+          `}
+        </style>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-500 via-red-600 to-orange-500 flex">
@@ -110,7 +165,16 @@ const AdminDashboard = () => {
       <Sidebar
         sidebarOpen={sidebarOpen}
         setSidebarOpen={setSidebarOpen}
-        handleLogout={handleLogout}
+        handleLogout={async () => {
+          try {
+            await axios.post("/auth/logout", {}, { withCredentials: true });
+          } catch {
+            console.warn("Logout failed or already logged out.");
+          }
+          localStorage.removeItem("zapalertRole");
+          localStorage.removeItem("user");
+          navigate("/");
+        }}
         links={links}
         location={location}
       />

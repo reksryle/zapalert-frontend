@@ -40,7 +40,8 @@ const ForceCenter = ({ center }) => {
 };
 
 
-// Mini Map Component for Emergency Cards - Make icon smaller
+
+// Mini Map Component for Emergency Cards
 const MiniMap = ({ center, report, onClick }) => {
   // Create a smaller icon for the mini-map
   const miniIconMap = {
@@ -52,19 +53,25 @@ const MiniMap = ({ center, report, onClick }) => {
   };
   const getMiniIcon = (type) => miniIconMap[type] || miniIconMap["Other"];
 
+  // Use the actual report location coordinates
+  const mapCenter = report.location?.coordinates || center;
+
   return (
     <div className="h-28 w-40 rounded-lg overflow-hidden cursor-pointer relative" onClick={onClick}>
       <MapContainer 
-        center={center} 
-        zoom={15} 
+        center={mapCenter} 
+        zoom={16} // Increased zoom for better accuracy
         zoomControl={false}
         dragging={false}
         doubleClickZoom={false}
         scrollWheelZoom={false}
         style={{ height: "100%", width: "100%" }}
       >
-        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-        <Marker position={center} icon={getMiniIcon(report.type)}>
+        <TileLayer 
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" 
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        />
+        <Marker position={mapCenter} icon={getMiniIcon(report.type)}>
           <Popup>{report.type} Emergency</Popup>
         </Marker>
       </MapContainer>
@@ -153,8 +160,20 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, handleLogout, links, location })
   </div>
 );
 
-// ---------------- Emergency Card ----------------
-const EmergencyCard = ({ report, onTheWay, onResponded, onDecline, onArrived, isOnTheWay, isArrived, pendingResponses, onMapClick }) => {
+// ---------------- Emergency Card (Enhanced Version) ----------------
+const EmergencyCard = ({ 
+  report, 
+  onTheWay, 
+  onResponded, 
+  onDecline, 
+  onArrived, 
+  isOnTheWay, 
+  isArrived, 
+  pendingResponses, 
+  onMapClick,
+  onRemoveCancelled, // Add this prop for removing cancelled reports
+}) => {
+  const [isRemoving, setIsRemoving] = useState(false);
   const formatPHTime = (isoString) =>
     new Date(isoString).toLocaleString("en-PH", {
       timeZone: "Asia/Manila",
@@ -175,11 +194,137 @@ const EmergencyCard = ({ report, onTheWay, onResponded, onDecline, onArrived, is
   };
 
   const isPending = pendingResponses.some(p => p.reportId === report._id);
-
+  const isCancelled = report.status === "cancelled";
+  
   // Handle map click for this specific report
   const handleMapClick = () => {
     onMapClick(report._id, report.location?.coordinates);
   };
+
+  // Handle remove cancelled report
+  const handleRemove = () => {
+    setIsRemoving(true);
+    setTimeout(() => {
+      onRemoveCancelled(report._id);
+    }, 300);
+  };
+
+  if (isCancelled) {
+    return (
+      <div className={`relative bg-white rounded-2xl shadow-lg overflow-hidden transition-all duration-300 ${
+        isRemoving ? 'opacity-0 h-0 overflow-hidden' : ''
+      }`}>
+        {/* Enhanced Cancellation Overlay - More Stylish */}
+        <div className="absolute inset-0 bg-gradient-to-br from-red-50 to-orange-50 backdrop-blur-sm z-10 flex flex-col items-center justify-center p-4">
+          <div className="text-center bg-white/95 backdrop-blur-md rounded-2xl p-6 shadow-xl border border-red-200 w-full max-w-md">
+            <div className="text-5xl mb-4 text-red-500">❌</div>
+            <h3 className="text-xl font-bold text-red-700 mb-3">REPORT CANCELLED</h3>
+            
+            {/* Enhanced cancellation details with better styling */}
+            <div className="mb-4 p-4 bg-red-50/80 rounded-xl border border-red-100 text-left">
+              <h4 className="font-semibold text-red-800 text-base mb-3 border-b border-red-200 pb-2">Cancellation Details</h4>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="font-medium text-red-700">Report Type:</span>
+                  <span className="text-red-900">{report.type}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-medium text-red-700">Resident:</span>
+                  <span className="text-red-900">{report.firstName} {report.lastName}</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="font-medium text-red-700">Reason:</span>
+                  <span className="text-red-900 mt-1">{report.cancellationReason || "Cancelled by resident"}</span>
+                </div>
+                {report.cancellationTime && (
+                  <div className="flex justify-between">
+                    <span className="font-medium text-red-700">Cancelled at:</span>
+                    <span className="text-red-900">{formatPHTime(report.cancellationTime)}</span>
+                  </div>
+                )}
+                {report.address && (
+                  <div className="flex flex-col">
+                    <span className="font-medium text-red-700">Location:</span>
+                    <span className="text-red-900 mt-1">{report.address}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            <div className="text-sm text-gray-600 mb-4 bg-gray-100 p-2 rounded-lg">
+              Originally reported at: {formatPHTime(report.createdAt)}
+            </div>
+            
+            {/* Remove button with better styling */}
+            <button
+              onClick={handleRemove}
+              className="mt-2 px-4 py-2 bg-red-500 text-white font-medium rounded-lg hover:bg-red-600 transition-colors flex items-center justify-center mx-auto shadow-md"
+            >
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+              Remove Report
+            </button>
+          </div>
+        </div>
+        
+        {/* Original Card Content (dimmed) */}
+        <div className="p-4 sm:p-6 opacity-60">
+          <div className="flex items-start justify-between mb-3 sm:mb-4">
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className={`px-3 py-1 rounded-full text-s sm:text-sm font-semibold ${typeColors[report.type] || typeColors.Other}`}>
+                {report.type} Report
+              </div>
+            </div>
+            <div className="text-xs sm:text-sm text-gray-500 ml-2 whitespace-nowrap">
+              {formatPHTime(report.createdAt)}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 mb-4">
+            <div>
+              <h3 className="text-lg font-bold text-gray-900 mb-2">Emergency Details</h3>
+              <p className={`text-gray-800 mb-3 text-sm sm:text-base ${!report.description ? "opacity-60 italic" : ""}`}>
+                {report.description || "No description provided"}
+              </p>
+            </div>
+
+            <div className="bg-gray-50 rounded-xl p-4 shadow-lg border border-gray-200">
+              <div className="flex flex-row gap-4 items-center">
+                <div className="flex-1 space-y-3 text-sm text-gray-700">
+                  <div className="flex flex-col">
+                    <span className="font-semibold text-gray-900">Name:</span>
+                    <span>{report.firstName} {report.lastName}</span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="font-semibold text-gray-900">Age:</span>
+                    <span>{report.age ?? "N/A"}</span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="font-semibold text-gray-900">Contact:</span>
+                    <span>{report.contactNumber ?? "N/A"}</span>
+                  </div>
+                </div>
+                
+                <div className="flex-shrink-0">
+                  <div className="text-xs text-gray-600 font-medium mb-1 text-center">
+                    Click to View Map
+                  </div>
+                  <div className="h-28 w-36 rounded-lg overflow-hidden cursor-pointer shadow-md border-2 border-white" onClick={handleMapClick}>
+                    <MiniMap 
+                      center={report.location?.coordinates || [10.306711119471714, 123.9011395473235]} 
+                      report={report}
+                      onClick={handleMapClick}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`relative bg-white rounded-2xl shadow-lg transition-all hover:shadow-xl ${
@@ -207,7 +352,8 @@ const EmergencyCard = ({ report, onTheWay, onResponded, onDecline, onArrived, is
               </div>
             )}
           </div>
-          <div className="text-xs sm:text-sm text-gray-500 ml-2 whitespace-nowrap">
+          {/* Increased timestamp size */}
+          <div className="text-sm text-gray-600 ml-2 whitespace-nowrap font-medium">
             {formatPHTime(report.createdAt)}
           </div>
         </div>
@@ -246,21 +392,11 @@ const EmergencyCard = ({ report, onTheWay, onResponded, onDecline, onArrived, is
                   Click to View Map
                 </div>
                 <div className="h-28 w-36 rounded-lg overflow-hidden cursor-pointer shadow-md border-2 border-white" onClick={handleMapClick}>
-                  <MapContainer 
+                  <MiniMap 
                     center={report.location?.coordinates || [10.306711119471714, 123.9011395473235]} 
-                    zoom={16} 
-                    zoomControl={false}
-                    dragging={false}
-                    doubleClickZoom={false}
-                    scrollWheelZoom={false}
-                    style={{ height: "100%", width: "100%" }}
-                  >
-                    <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                    <Marker position={report.location?.coordinates || [10.306711119471714, 123.9011395473235]} 
-                            icon={getIcon(report.type)}>
-                      <Popup>{report.type} Emergency</Popup>
-                    </Marker>
-                  </MapContainer>
+                    report={report}
+                    onClick={handleMapClick}
+                  />
                 </div>
               </div>
             </div>
@@ -338,7 +474,7 @@ const EmergencyCard = ({ report, onTheWay, onResponded, onDecline, onArrived, is
   );
 };
 
-// ---------------- Emergency List (Modified for Offline Support) ----------------
+// ---------------- Emergency List (Enhanced Version) ----------------
 const EmergencyList = ({ onTheWayIds, setOnTheWayIds, arrivedIds, setArrivedIds, onActionClick, onMapClick }) => {
   const { reports, markAsOnTheWay, markAsResponded, declineReport } = useEmergencyReports(false);
 
@@ -347,8 +483,37 @@ const EmergencyList = ({ onTheWayIds, setOnTheWayIds, arrivedIds, setArrivedIds,
     JSON.parse(localStorage.getItem("pendingResponses") || "[]")
   );
 
+  // State for showing/hiding cancelled reports
+  const [showCancelled, setShowCancelled] = useState(false);
+  
+  // State for tracking removed cancelled reports - Load from localStorage
+  const [removedCancelledReports, setRemovedCancelledReports] = useState(
+    JSON.parse(localStorage.getItem("removedCancelledReports") || "[]")
+  );
+
   // Track toast IDs for offline responses
   const pendingToastIds = useRef({});
+
+  // Filter reports based on showCancelled state and removed reports
+  const filteredReports = showCancelled 
+    ? reports.filter(report => !removedCancelledReports.includes(report._id))
+    : reports.filter(report => report.status !== "cancelled" && !removedCancelledReports.includes(report._id));
+
+  // Count active reports (excluding cancelled and removed ones)
+  const activeReportsCount = reports.filter(r => 
+    r.status !== "cancelled" && !removedCancelledReports.includes(r._id)
+  ).length;
+  
+  // Count cancelled reports (excluding removed ones)
+  const cancelledReportsCount = reports.filter(r => 
+    r.status === "cancelled" && !removedCancelledReports.includes(r._id)
+  ).length;
+
+  // Count responding reports (excluding cancelled reports)
+  const respondingCount = onTheWayIds.filter(id => {
+    const report = reports.find(r => r._id === id);
+    return report && report.status !== "cancelled" && !removedCancelledReports.includes(id);
+  }).length;
 
   // Sync ARRIVED state
   useEffect(() => {
@@ -367,6 +532,11 @@ const EmergencyList = ({ onTheWayIds, setOnTheWayIds, arrivedIds, setArrivedIds,
 
     setArrivedIds(alreadyArrived);
   }, [reports, setArrivedIds]);
+
+  // Save removed cancelled reports to localStorage
+  useEffect(() => {
+    localStorage.setItem("removedCancelledReports", JSON.stringify(removedCancelledReports));
+  }, [removedCancelledReports]);
 
   // ---------------- Offline & Auto-Send ----------------
   const savePending = (reportId, action, reportName, residentName) => {
@@ -418,10 +588,18 @@ const EmergencyList = ({ onTheWayIds, setOnTheWayIds, arrivedIds, setArrivedIds,
   const handleOnTheWay = (id, report) => {
     if (navigator.onLine) {
       markAsOnTheWay(id, report);
-      if (!onTheWayIds.includes(id)) setOnTheWayIds([...onTheWayIds, id]);
+      if (!onTheWayIds.includes(id)) {
+        const updatedOnTheWayIds = [...onTheWayIds, id];
+        setOnTheWayIds(updatedOnTheWayIds);
+        localStorage.setItem("onTheWayIds", JSON.stringify(updatedOnTheWayIds));
+      }
     } else {
       savePending(id, "on_the_way", `${report.type} Report`, `${report.firstName} ${report.lastName}`);
-      if (!onTheWayIds.includes(id)) setOnTheWayIds([...onTheWayIds, id]);
+      if (!onTheWayIds.includes(id)) {
+        const updatedOnTheWayIds = [...onTheWayIds, id];
+        setOnTheWayIds(updatedOnTheWayIds);
+        localStorage.setItem("onTheWayIds", JSON.stringify(updatedOnTheWayIds));
+      }
     }
   };
 
@@ -434,7 +612,21 @@ const EmergencyList = ({ onTheWayIds, setOnTheWayIds, arrivedIds, setArrivedIds,
   const handleDecline = (id, report) => {
     if (navigator.onLine) {
       declineReport(id);
-    } else savePending(id, "declined", `${report.type} Report`);
+      // Remove from onTheWayIds if it was there
+      if (onTheWayIds.includes(id)) {
+        const updatedOnTheWayIds = onTheWayIds.filter(reportId => reportId !== id);
+        setOnTheWayIds(updatedOnTheWayIds);
+        localStorage.setItem("onTheWayIds", JSON.stringify(updatedOnTheWayIds));
+      }
+    } else {
+      savePending(id, "declined", `${report.type} Report`);
+      // Remove from onTheWayIds if it was there
+      if (onTheWayIds.includes(id)) {
+        const updatedOnTheWayIds = onTheWayIds.filter(reportId => reportId !== id);
+        setOnTheWayIds(updatedOnTheWayIds);
+        localStorage.setItem("onTheWayIds", JSON.stringify(updatedOnTheWayIds));
+      }
+    }
   };
 
   const handleArrived = async (id, report) => {
@@ -448,61 +640,82 @@ const EmergencyList = ({ onTheWayIds, setOnTheWayIds, arrivedIds, setArrivedIds,
     } else savePending(id, "arrived", `${report.type} Report`);
   };
 
-  // Count recent reports and responding reports
-  const recentReportsCount = reports.length;
-  const respondingCount = onTheWayIds.length;
+  // Remove individual cancelled report
+  const removeCancelledReport = (id) => {
+    const updatedRemovedReports = [...removedCancelledReports, id];
+    setRemovedCancelledReports(updatedRemovedReports);
+    localStorage.setItem("removedCancelledReports", JSON.stringify(updatedRemovedReports));
+  };
+
+  // Remove all cancelled reports
+  const removeAllCancelledReports = () => {
+    const allCancelledIds = reports
+      .filter(r => r.status === "cancelled")
+      .map(r => r._id);
+    const updatedRemovedReports = [...removedCancelledReports, ...allCancelledIds];
+    setRemovedCancelledReports(updatedRemovedReports);
+    localStorage.setItem("removedCancelledReports", JSON.stringify(updatedRemovedReports));
+  };
 
   return (
-<div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 relative z-10">
-  <div className="flex items-center justify-between mb-4 sm:mb-6 sticky top-0 bg-white z-10 py-2"> {/* Added sticky and bg-white */}
-    <h2 className="text-lg sm:text-xl font-bold text-gray-900">Active Emergencies</h2>
-    <div className="flex items-center gap-2">
-      {respondingCount > 0 && (
-        <div className="px-2 sm:px-3 py-1 bg-yellow-500 text-yellow-900 text-xs font-bold rounded-full animate-pulse">
-          {respondingCount} RESPOND/S
-        </div>
-      )}
-      {recentReportsCount > 0 && (
-        <div className="px-2 sm:px-3 py-1 bg-blue-500 text-white text-xs font-bold rounded-full">
-          {recentReportsCount} ACTIVE
-        </div>
-      )}
-    </div>
-  </div>
-  
-      {reports.length === 0 ? (
-        <div className="text-center py-8 sm:py-12">
-          <div className="w-12 sm:w-16 h-12 sm:h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
-            <svg className="w-6 sm:w-8 h-6 sm:h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+    <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 relative z-10 min-w-[300px]">
+      <div className="flex items-center justify-between mb-4 sm:mb-6 sticky top-0 bg-white z-10 py-2">
+        <h2 className="text-lg sm:text-xl font-bold text-gray-900">Active Emergencies</h2>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {/* RESPONDING indicator - blinks when there are responding reports */}
+          <div className={`px-2 sm:px-3 py-1 bg-yellow-500 text-yellow-900 text-xs font-bold rounded-full ${respondingCount > 0 ? 'animate-pulse' : ''}`}>
+            <span className="text-[10px] mr-1">RESPONDING:</span>
+            {respondingCount}
           </div>
-          <p className="text-gray-500 font-medium text-sm sm:text-base">No active emergencies</p>
-          <p className="text-xs sm:text-sm text-gray-400 mt-1">All clear for now</p>
+          
+          {/* ACTIVE indicator - changes opacity based on count */}
+          <div className={`px-2 sm:px-3 py-1 bg-blue-500 text-white text-xs font-bold rounded-full ${activeReportsCount === 0 ? 'opacity-40' : ''}`}>
+            <span className="text-[10px] mr-1">ACTIVE:</span>
+            {activeReportsCount}
+          </div>
         </div>
-      ) : (
-        <div className="space-y-3 sm:space-y-4 max-h-[63vh] sm:max-h-none overflow-y-auto">
-          {reports.map((report) => {
-            const isOnTheWay = onTheWayIds.includes(report._id);
-            const isArrived = arrivedIds.includes(report._id);
-            
-            return (
-              <EmergencyCard
-                key={report._id}
-                report={report}
-                onTheWay={handleOnTheWay}
-                onResponded={handleResponded}
-                onDecline={handleDecline}
-                onArrived={handleArrived}
-                isOnTheWay={isOnTheWay}
-                isArrived={isArrived}
-                pendingResponses={pendingResponses}
-                onMapClick={onMapClick}
-              />
-            );
-          })}
-        </div>
-      )}
+      </div>
+      
+      <div className="max-h-[60vh] overflow-y-auto">
+        {filteredReports.length === 0 ? (
+          <div className="text-center py-8 sm:py-12">
+            <div className="w-12 sm:w-16 h-12 sm:h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
+              <svg className="w-6 sm:w-8 h-6 sm:h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <p className="text-gray-500 font-medium text-sm sm:text-base">
+              No active emergencies
+            </p>
+            <p className="text-xs sm:text-sm text-gray-400 mt-1">
+              All clear for now
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3 sm:space-y-4">
+            {filteredReports.map((report) => {
+              const isOnTheWay = onTheWayIds.includes(report._id);
+              const isArrived = arrivedIds.includes(report._id);
+              
+              return (
+                <EmergencyCard
+                  key={report._id}
+                  report={report}
+                  onTheWay={handleOnTheWay}
+                  onResponded={handleResponded}
+                  onDecline={handleDecline}
+                  onArrived={handleArrived}
+                  isOnTheWay={isOnTheWay}
+                  isArrived={isArrived}
+                  pendingResponses={pendingResponses}
+                  onMapClick={onMapClick}
+                  onRemoveCancelled={removeCancelledReport}
+                />
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
@@ -516,13 +729,15 @@ const MapView = ({
   onTheWayIds,
   setOnTheWayIds,
   arrivedIds,
-  setArrivedIds
+  setArrivedIds,
+  highlightedReport // Add this prop
 }) => {
   const zapateraCenter = [10.306711119471714, 123.9011395473235];
   const { reports, markAsOnTheWay, markAsResponded, declineReport } = useEmergencyReports(true);
   const audioInitialized = useRef(false);
   const announcementAudioRef = useRef(null);
   const hasShownToast = useRef(false);
+  const mapRef = useRef();
 
   // Preload sounds once
   useEffect(() => {
@@ -548,35 +763,49 @@ const MapView = ({
     }
   }, []);
 
+  // REMOVED the auto-centering useEffect
+
   return (
     <div className="bg-white rounded-2xl shadow-lg overflow-hidden flex flex-col relative z-10">
       {/* Map Section */}
-      <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-100">
+      <div className="flex items-center justify-center p-4 sm:p-6 border-b border-gray-100">
         <h3 className="text-lg sm:text-xl font-bold text-gray-900">Emergency Map</h3>
+
       </div>
 
       <div className="h-[300px] sm:h-[400px] relative">
-        <MapContainer center={zapateraCenter} zoom={16} scrollWheelZoom style={{ height: "100%", width: "100%" }}>
+        <MapContainer 
+          center={zapateraCenter} 
+          zoom={16} 
+          scrollWheelZoom 
+          style={{ height: "100%", width: "100%" }}
+          ref={mapRef}
+        >
           <ForceCenter center={zapateraCenter} />
           <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
           <Circle center={zapateraCenter} radius={300} pathOptions={{ color: "blue", fillColor: "lightblue", fillOpacity: 0.3 }} />
-          {reports.map((report) => (
-            <AutoOpenMarker
-              key={report._id}
-              report={report}
-              icon={getIcon(report.type)}
-              onTheWay={(id, r) => {
-                markAsOnTheWay(id, r);
-                if (!onTheWayIds.includes(id)) setOnTheWayIds([...onTheWayIds, id]);
-              }}
-              onResponded={markAsResponded}
-              onDecline={declineReport}
-              onTheWayIds={onTheWayIds}
-              arrivedIds={arrivedIds}
-              setOnTheWayIds={setOnTheWayIds}
-              setArrivedIds={setArrivedIds}
-            />
-          ))}
+          {reports.map((report) => {
+            if (report.status === "cancelled") return null; // Don't show cancelled reports on map
+
+            return (
+              <AutoOpenMarker
+                key={report._id}
+                report={report}
+                icon={getIcon(report.type)}
+                onTheWay={(id, r) => {
+                  markAsOnTheWay(id, r);
+                  if (!onTheWayIds.includes(id)) setOnTheWayIds([...onTheWayIds, id]);
+                }}
+                onResponded={markAsResponded}
+                onDecline={declineReport}
+                onTheWayIds={onTheWayIds}
+                arrivedIds={arrivedIds}
+                setOnTheWayIds={setOnTheWayIds}
+                setArrivedIds={setArrivedIds}
+                isHighlighted={report._id === highlightedReport} // This is the key change
+              />
+            );
+          })}
         </MapContainer>
 
         {/* Compact Legend */}
@@ -596,7 +825,6 @@ const MapView = ({
       <div className="border-t border-gray-200 bg-gray-50">
         <div className="p-4 sm:p-5 flex items-center justify-between">
           <h4 className="font-bold text-gray-900 text-sm sm:text-base">Recent Notifications</h4>
-
         </div>
         <div className="max-h-60 overflow-y-auto px-6 pb-4 space-y-3">
           {responderNotifications.length === 0 ? (
@@ -629,6 +857,9 @@ const ResponderDashboard = () => {
   const onlineTimeout = useRef(null);
   const [showTutorial, setShowTutorial] = useState(false);
   const [showNotificationDropdown, setShowNotificationDropdown] = useState(false);
+  
+  // Add state to track which report to highlight on map
+  const [highlightedReport, setHighlightedReport] = useState(null);
 
   const [responderNotifications, setResponderNotifications] = useState(() => {
     const stored = localStorage.getItem("responder-notifications");
@@ -672,32 +903,42 @@ const ResponderDashboard = () => {
   }, [networkStatus]);
 
   // ---------------- Shared ON THE WAY / ARRIVED states ----------------
-  const [onTheWayIds, setOnTheWayIds] = useState([]);
+  const [onTheWayIds, setOnTheWayIds] = useState(() => {
+    const stored = localStorage.getItem("onTheWayIds");
+    return stored ? JSON.parse(stored) : [];
+  });
   const [arrivedIds, setArrivedIds] = useState([]);
+
+  // Save onTheWayIds to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem("onTheWayIds", JSON.stringify(onTheWayIds));
+  }, [onTheWayIds]);
 
   const links = [
     { name: "Dashboard", path: "/responder", icon: <Home size={18} /> }
   ];
 
-const handleLogout = async () => {
-  try {
-    await axios.post("/auth/logout", {}, { withCredentials: true });
-  } catch {
-    console.warn("Logout failed or already logged out.");
-  }
-  
-  // Clear the tutorial shown flag on logout
-  localStorage.removeItem("responderTutorialShown");
-  setShowTutorial(false);
-  
-  localStorage.removeItem("responder-notifications");
-  localStorage.removeItem("responder-hasNewNotif");
-  navigate("/");
-};
+  const handleLogout = async () => {
+    try {
+      await axios.post("/auth/logout", {}, { withCredentials: true });
+    } catch {
+      console.warn("Logout failed or already logged out.");
+    }
+    
+    // Clear the tutorial shown flag on logout
+    localStorage.removeItem("responderTutorialShown");
+    setShowTutorial(false);
+    
+    localStorage.removeItem("responder-notifications");
+    localStorage.removeItem("responder-hasNewNotif");
+    navigate("/");
+  };
 
-  const handleMapClick = (reportId) => {
+  // Updated handleMapClick to accept both reportId and coordinates
+  const handleMapClick = (reportId, coordinates) => {
     setActiveTab("map");
-    // You could add logic here to highlight the specific report on the map
+    // Store the report ID to highlight it on the map
+    setHighlightedReport(reportId);
   };
 
   const handleClearNotifications = () => {
@@ -787,6 +1028,36 @@ const handleLogout = async () => {
     responderSocket.on("notify-arrived", (data) =>
       pushNotif(data, "🔵 [responder] has arrived at the [type] report of [resident]", "/sounds/imhere.mp3")
     );
+
+    // Add this to the socket event listeners in ResponderDashboard.jsx
+    responderSocket.on("report-cancelled", (data) => {
+      const message = `🔴 Report for ${data.type} has been cancelled by Resident ${data.residentName}`;
+      
+      // Show toast notification
+      toast(message, { 
+        duration: 6000,
+        icon: "❌",
+        style: {
+          background: '#fee2e2',
+          border: '1px solid #fecaca',
+          color: '#b91c1c'
+        }
+      });
+      
+      // Play cancellation sound
+      const cancelSound = new Audio("/sounds/cancel.mp3");
+      cancelSound.play().catch(() => {});
+      
+      // Add to notifications list
+      const newNotif = {
+        message,
+        timestamp: new Date().toLocaleString(),
+        id: `cancelled-${Date.now()}`
+      };
+      
+      setResponderNotifications((prev) => [newNotif, ...prev]);
+      setHasNewNotif(true);
+    });
 
     return () => responderSocket.disconnect();
   }, [loading, username]);
@@ -973,7 +1244,7 @@ const handleLogout = async () => {
               arrivedIds={arrivedIds}
               setArrivedIds={setArrivedIds}
               onActionClick={() => {}}
-              onMapClick={handleMapClick}
+              onMapClick={handleMapClick} // Pass the updated handler
             />
             <MapView
               responderNotifications={responderNotifications}
@@ -984,20 +1255,21 @@ const handleLogout = async () => {
               setOnTheWayIds={setOnTheWayIds}
               arrivedIds={arrivedIds}
               setArrivedIds={setArrivedIds}
+              highlightedReport={highlightedReport} // Pass the highlighted report
             />
           </div>
 
           {/* Mobile Single View */}
           <div className="lg:hidden">
             {activeTab === "list" ? (
-              <EmergencyList 
-                onTheWayIds={onTheWayIds}
-                setOnTheWayIds={setOnTheWayIds}
-                arrivedIds={arrivedIds}
-                setArrivedIds={setArrivedIds}
-                onActionClick={() => setActiveTab("map")}
-                onMapClick={handleMapClick}
-              />
+            <EmergencyList 
+              onTheWayIds={onTheWayIds}
+              setOnTheWayIds={setOnTheWayIds}
+              arrivedIds={arrivedIds}
+              setArrivedIds={setArrivedIds}
+              onActionClick={() => {}}
+              onMapClick={handleMapClick} // Pass the updated handler
+            />
             ) : (
               <MapView
                 responderNotifications={responderNotifications}
@@ -1008,6 +1280,7 @@ const handleLogout = async () => {
                 setOnTheWayIds={setOnTheWayIds}
                 arrivedIds={arrivedIds}
                 setArrivedIds={setArrivedIds}
+                highlightedReport={highlightedReport} // Pass the highlighted report
               />
             )}
           </div>

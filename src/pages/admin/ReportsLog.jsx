@@ -59,6 +59,7 @@ const ReportsLog = () => {
         username,
         latitude,
         longitude,
+        responders // Include responders in export
       }) => ({
         id: _id,
         type,
@@ -69,6 +70,9 @@ const ReportsLog = () => {
         username: username || "N/A",
         latitude,
         longitude,
+        responderActions: responders ? responders.map(r => 
+          `${r.fullName || 'Responder'}: ${r.action} at ${new Date(r.timestamp).toLocaleString()}`
+        ).join('; ') : 'None'
       })
     );
 
@@ -84,6 +88,7 @@ const ReportsLog = () => {
         "Username",
         "Latitude",
         "Longitude",
+        "Responder Actions"
       ],
       ...rows.map((row) =>
         [
@@ -95,6 +100,7 @@ const ReportsLog = () => {
           escapeCSV(row.username),
           row.latitude,
           row.longitude,
+          escapeCSV(row.responderActions)
         ].join(",")
       ),
     ].join("\n");
@@ -109,6 +115,29 @@ const ReportsLog = () => {
     a.download = `BRGY_REPORTS-${formattedDate}.csv`;
 
     a.click();
+  };
+
+  const getStatusColor = (status) => {
+    switch(status) {
+      case 'pending': return 'bg-yellow-100 text-yellow-800';
+      case 'on the way': return 'bg-blue-100 text-blue-800';
+      case 'responded': return 'bg-green-100 text-green-800';
+      case 'cancelled': return 'bg-red-100 text-red-800';
+      case 'declined': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  // Add this function to format action text
+  const formatActionText = (action) => {
+    const actionMap = {
+      'on_the_way': 'On the Way',
+      'arrived': 'Arrived',
+      'responded': 'Responded',
+      'declined': 'Cancelled Response',
+      'cancelled': 'Cancelled Response'
+    };
+    return actionMap[action] || action.replace("_", " ");
   };
 
   const filteredReports = reports
@@ -167,22 +196,13 @@ const ReportsLog = () => {
     currentPage * reportsPerPage
   );
 
-  const getStatusColor = (status) => {
-    switch(status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'on the way': return 'bg-blue-100 text-blue-800';
-      case 'responded': return 'bg-green-100 text-green-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
   return (
     <div className="bg-gradient-to-br from-white via-red-50 to-orange-50 rounded-2xl shadow-lg p-6">
       <h1 className="text-3xl font-bold mb-6 text-gray-800">Reports Log</h1>
 
-      {/* Filters */}
+      {/* Filters - Add cancelled filter */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-        {["all", "pending", "on the way", "resolved"].map((status) => (
+        {["all", "pending", "on the way", "resolved", "cancelled"].map((status) => (
           <button
             key={status}
             onClick={() => setStatusFilter(status)}
@@ -234,7 +254,7 @@ const ReportsLog = () => {
         </button>
       </div>
 
-      {/* Table */}
+      {/* Table - Removed Responders column */}
       <div className="overflow-x-auto rounded-2xl shadow-lg bg-white/80 backdrop-blur-sm">
         <table className="min-w-full text-sm">
           <thead className="bg-gradient-to-r from-red-500 to-orange-500 text-white">
@@ -388,9 +408,9 @@ const ReportsLog = () => {
                     {selectedReport.responders.map((r, idx) => (
                       <tr key={idx} className="hover:bg-red-50/50 border-b border-red-100">
                         <td className="py-3 px-4 font-medium">{r.fullName}</td>
-                        <td className="py-3 px-4 capitalize">
+                        <td className="py-3 px-4">
                           <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getStatusColor(r.action)}`}>
-                            {r.action.replace("_", " ")}
+                            {formatActionText(r.action)}
                           </span>
                         </td>
                         <td className="py-3 px-4">

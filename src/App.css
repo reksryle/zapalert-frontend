@@ -40,3 +40,10 @@
 .read-the-docs {
   color: #888;
 }
+
+.highlighted-marker {
+  filter: drop-shadow(0 0 6px rgba(255, 204, 0, 0.8));
+  z-index: 1000 !important;
+}
+
+/* Remove the pulse animation to keep normal behavior */

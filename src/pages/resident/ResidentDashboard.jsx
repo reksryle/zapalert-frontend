@@ -10,6 +10,7 @@ import { Bell, Menu, X, LogOut, Home } from "lucide-react";
 import showAnnouncementToast from "../../utils/showAnnouncementToast";
 import useNetworkStatus from "../../hooks/useNetworkStatus";
 
+
 // ---------------- Map Helpers ----------------
 const markerIcon = new L.Icon({
   iconUrl: "/icons/marker.png",
@@ -190,7 +191,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, handleLogout, links, location })
 );
 
 // ---------------- Emergency Form ----------------
-const EmergencyForm = ({ location, setLocation, user, networkStatus, setZapStatus, setLoadingState, resetFirstResponder }) => {
+const EmergencyForm = ({ location, setLocation, user, networkStatus, setZapStatus, setLoadingState, resetFirstResponder, setCurrentReportId }) => {
   const [type, setType] = useState("");
   const [description, setDescription] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -199,9 +200,15 @@ const EmergencyForm = ({ location, setLocation, user, networkStatus, setZapStatu
 
   const sendReport = async (reportData, isDraft = false) => {
     try {
-      await axios.post("/reports", reportData);
+      const response = await axios.post("/reports", reportData);
       // Reset first responder tracking for new report
       resetFirstResponder();
+      
+      // Store the report ID for potential cancellation
+      if (response.data.reportId) {
+        setCurrentReportId(response.data.reportId);
+      }
+      
       toast.success(
         isDraft ? "📝 Draft report sent successfully!" : "🚨 Emergency report submitted!"
       );
@@ -441,17 +448,23 @@ const ResidentDashboard = () => {
     age: "N/A",
     contactNumber: "N/A",
   });
+  
+
   const [location, setLocation] = useState({ latitude: null, longitude: null });
   const [notifications, setNotifications] = useState(() => {
     const stored = localStorage.getItem("resident-notifications");
     return stored ? JSON.parse(stored) : [];
   });
+
   const [hasNewNotif, setHasNewNotif] = useState(() => {
     const stored = localStorage.getItem("resident-hasNew");
     return stored ? JSON.parse(stored) : notifications.length > 0;
   });
+
   const [showDropdown, setShowDropdown] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
+    const [currentReportId, setCurrentReportId] = useState(null);
+  const [cancelledReports, setCancelledReports] = useState([]);
 
   const networkStatus = useNetworkStatus();
   const wasOffline = useRef(false);
@@ -582,7 +595,6 @@ useEffect(() => {
   });
 
   socket.on("declined", (data) => {
-    // remove overlay, just show toast
     const message = `🔴 Responder ${data.responderName} declined your ${data.type} report.`;
     toast.error(message, { duration: 6000 });
     declinedAudioRef.current?.play().catch(() => {});
@@ -610,6 +622,28 @@ useEffect(() => {
   localStorage.setItem("resident-notifications", JSON.stringify(notifications));
   localStorage.setItem("resident-hasNew", JSON.stringify(hasNewNotif));
 }, [notifications, hasNewNotif]);
+
+
+const handleCancelReport = async (reportId) => {
+  try {
+    setLoadingState("cancelling");
+    
+    await axios.patch(`/reports/${reportId}/cancel`, {}, { withCredentials: true });
+    
+    toast.success("Report cancelled successfully");
+    setCancelledReports(prev => [...prev, reportId]);
+    
+    // Play cancellation sound
+    const cancelSound = new Audio("/sounds/cancelreport.mp3");
+    cancelSound.play().catch(() => {});
+    
+  } catch (err) {
+    console.error("Failed to cancel report:", err);
+    toast.error("Failed to cancel report");
+  } finally {
+    setLoadingState(null);
+  }
+};
 
 // ---------------- Logout ----------------
 const handleLogout = async () => {
@@ -815,15 +849,16 @@ return (
 
       {/* Emergency Form Section */}
       <div className="flex-1 overflow-y-auto">
-        <EmergencyForm 
-          location={location} 
-          setLocation={setLocation} 
-          user={user} 
-          networkStatus={networkStatus} 
-          setZapStatus={setZapStatus}
-          setLoadingState={setLoadingState}
-          resetFirstResponder={resetFirstResponder}
-        />
+  <EmergencyForm 
+    location={location} 
+    setLocation={setLocation} 
+    user={user} 
+    networkStatus={networkStatus} 
+    setZapStatus={setZapStatus}
+    setLoadingState={setLoadingState}
+    resetFirstResponder={resetFirstResponder}
+    setCurrentReportId={setCurrentReportId}
+  />
       </div>
     </div>
 
@@ -919,9 +954,10 @@ return (
                 </p>
               </div>
               <button
-                onClick={() => setLoadingState(null)}
-                className="px-6 py-3 rounded-2xl bg-gradient-to-r from-gray-500 to-gray-600 text-white hover:from-gray-600 hover:to-gray-700 transition-all font-semibold shadow-lg hover:scale-105"
+                onClick={() => handleCancelReport(currentReportId)}
+                className="px-6 py-3 rounded-2xl bg-gradient-to-r from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700 transition-all font-semibold shadow-lg hover:scale-105"
               >
+               
                 Cancel Request
               </button>
             </>
