@@ -388,8 +388,33 @@ const EmergencyForm = ({ location, setLocation, user, networkStatus, setZapStatu
                     },
                   }}
                 >
-                  <Tooltip permanent direction="top" offset={[3, -35]} opacity={1}>
-                    Drag to adjust location
+                  <Tooltip
+                    permanent
+                    direction="top"
+                    offset={[3, -33]}
+                    opacity={1}
+                  >
+                    <div
+                      style={{
+                        background: "linear-gradient(135deg, #e6bebecc, #f1a4a454)", // glassy white-red blend
+
+                      
+                        padding: "6px 10px",
+                        fontSize: "11px",
+                        boxShadow: "0 4px 10px rgba(0,0,0,0.15)",
+                        textAlign: "center",
+                        lineHeight: 1.3,
+                        color: "#b91c1c", // deep red text
+                        backdropFilter: "blur(6px)", // glass effect
+                      }}
+                    >
+                      <div style={{ fontWeight: "700", fontSize: "12px", color: "#7f1d1d" }}>
+                        Your Location
+                      </div>
+                      <div style={{ fontSize: "10px", color: "#444" }}>
+                        Drag to adjust
+                      </div>
+                    </div>
                   </Tooltip>
                 </Marker>
                 <RecenterMap lat={location.latitude} lng={location.longitude} />
@@ -481,9 +506,11 @@ useEffect(() => {
         setLoading(true);
         setTimeout(() => {
           setLoading(false);
-          if (!sessionStorage.getItem("locationTutorialShown")) {
+          // Check if this is a fresh login (no tutorial shown for this session)
+          const hasSeenTutorial = localStorage.getItem("tutorialShownThisSession");
+          if (!hasSeenTutorial) {
             setShowTutorial(true);
-            sessionStorage.setItem("locationTutorialShown", "true");
+            localStorage.setItem("tutorialShownThisSession", "true");
           }
         }, 2000);
       }
@@ -545,13 +572,7 @@ useEffect(() => {
   });
 
   socket.on("responded", (data) => {
-    // Check if this is the first response
-    const isFirstResponse = !firstResponderHandled.current;
-    
-    if (isFirstResponse) {
-      setLoadingState("responded");
-      firstResponderHandled.current = true; // Mark first responder as handled
-    }
+  setLoadingState("responded");
     
     const message = `🟢 Responder ${data.responderName} responded to your ${data.type} report.`;
     toast.success(message, { duration: 6000 });
@@ -597,7 +618,7 @@ const handleLogout = async () => {
   } catch {}
   localStorage.removeItem("resident-notifications");
   localStorage.removeItem("resident-hasNew");
-  sessionStorage.removeItem("locationTutorialShown");
+  localStorage.removeItem("tutorialShownThisSession"); // Clear the session flag
   navigate("/");
 };
 
@@ -639,6 +660,28 @@ if (loading) {
           }
           .animate-popupIn {
             animation: popupIn 0.4s ease-out forwards;
+          }
+            
+           /* Add these new animations to your existing style block */
+          @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+          }
+          .animate-float {
+            animation: float 3s ease-in-out infinite;
+          }
+          
+          @keyframes popupOut {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(0.8); opacity: 0; }
+          }
+          
+          @keyframes pulse-soft {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+          }
+          .animate-pulse {
+            animation: pulse-soft 2s ease-in-out infinite;
           }
         `}
       </style>
@@ -925,33 +968,41 @@ return (
       </div>
     )}
     
-      {/* Tutorial Popup */}
-      {showTutorial && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999] animate-fadeIn">
-          <div className="bg-white/90 backdrop-blur-md rounded-3xl max-w-sm w-full p-6 space-y-5 text-gray-800 relative shadow-2xl transform scale-95 animate-popupIn border border-white/30">
-            <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-2 w-16 h-1 rounded-full bg-red-600 shadow-md"></div>
-            <h3 className="text-2xl font-extrabold text-red-700 text-center">
-              Enable Location
-            </h3>
-            <p className="text-sm text-gray-700 text-center leading-relaxed">
-              To use ZapAlert effectively, please turn on your device's location so responders can reach you quickly.
-            </p>
-            <img
-              src="/tutorial/turnlocation.gif"
-              alt="Enable Location"
-              className="w-full rounded-xl shadow-lg border border-gray-200"
-            />
-            <button
-              onClick={() => setShowTutorial(false)}
-              className="w-full py-3 bg-gradient-to-r from-red-600 via-red-500 to-orange-400 text-white font-bold rounded-xl shadow-lg hover:scale-105 hover:shadow-xl transition transform duration-300"
-            >
-              Got it
-            </button>
-          </div>
+    {showTutorial && (
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999] animate-fadeIn">
+        <div className="bg-white/90 backdrop-blur-md rounded-3xl max-w-sm w-full p-6 space-y-5 text-gray-800 relative shadow-2xl transform scale-95 animate-popupIn border border-white/30">
+          <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-2 w-16 h-1 rounded-full bg-red-600 shadow-md"></div>
+          <h3 className="text-2xl font-extrabold text-red-700 text-center">
+            Enable Location
+          </h3>
+          <p className="text-sm text-gray-700 text-center leading-relaxed">
+            To use ZapAlert effectively, please turn on your device's location so responders can reach you quickly.
+          </p>
+          <img
+            src="/tutorial/turnlocation.gif"
+            alt="Enable Location"
+            className="w-full rounded-xl shadow-lg border border-gray-200 animate-float"
+          />
+          <button
+            onClick={() => {
+              setShowTutorial(false);
+              // Optional: Add a subtle scale down animation when closing
+              const tutorialElement = document.querySelector('.animate-popupIn');
+              if (tutorialElement) {
+                tutorialElement.style.animation = 'popupOut 0.3s ease-in forwards';
+                setTimeout(() => setShowTutorial(false), 300);
+              }
+            }}
+            className="w-full py-3 bg-gradient-to-r from-red-600 via-red-500 to-orange-400 text-white font-bold rounded-xl shadow-lg hover:scale-105 hover:shadow-xl transition transform duration-300 animate-pulse"
+          >
+            Got it
+          </button>
         </div>
-      )}
+      </div>
+    )}
     </div>
   );
 };
 
 export default ResidentDashboard;
+

@@ -8,8 +8,6 @@ const BASE_IMAGE_URL = import.meta.env.VITE_IMAGE_URL || "https://zapalert-backe
 const PendingUsers = () => {
   const [pendingUsers, setPendingUsers] = useState([]);
   const [selectedImage, setSelectedImage] = useState(null);
-
-  // Modal state for rejecting user only
   const [modalOpen, setModalOpen] = useState(false);
   const [modalUserId, setModalUserId] = useState(null);
 
@@ -50,7 +48,6 @@ const PendingUsers = () => {
     }
   };
 
-  // Open reject confirmation modal
   const handleRejectClick = (id) => {
     setModalUserId(id);
     setModalOpen(true);
@@ -66,11 +63,13 @@ const PendingUsers = () => {
   }, []);
 
   return (
-    <div className="px-4 py-6">
-      <h1 className="text-2xl font-bold mb-6">Pending User Requests</h1>
+    <div className="bg-gradient-to-br from-white via-red-50 to-orange-50 rounded-2xl shadow-lg p-6">
+      <h1 className="text-2xl font-bold mb-6 text-gray-800">Pending User Requests</h1>
 
       {pendingUsers.length === 0 ? (
-        <p className="text-gray-600">No pending users.</p>
+        <div className="text-center py-12 bg-white/80 rounded-2xl shadow-inner">
+          <p className="text-gray-600 text-lg">No pending users.</p>
+        </div>
       ) : (
         <div className="grid gap-6">
           {pendingUsers.map((user) => {
@@ -78,54 +77,47 @@ const PendingUsers = () => {
             return (
               <div
                 key={user._id}
-                className="bg-white shadow rounded-lg p-5 grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-4 items-center border"
+                className="bg-white/90 backdrop-blur-sm shadow-lg rounded-2xl p-6 grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-6 items-center border-2 border-red-100 hover:border-red-200 transition-all"
               >
                 {/* Left: User Info */}
                 <div>
-                  <h2 className="text-lg font-semibold">
+                  <h2 className="text-xl font-semibold text-gray-800 mb-2">
                     {user.firstName} {user.lastName}
                   </h2>
-                  <div className="text-sm text-gray-700 space-y-1 mt-1">
+                  <div className="text-sm text-gray-700 space-y-2">
                     <p><b>Username:</b> {user.username}</p>
-                    <p><b>Role:</b> {user.role}</p>
-                    <p><b>Status:</b> {user.status}</p>
+                    <p><b>Role:</b> <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-semibold">{user.role}</span></p>
+                    <p><b>Status:</b> <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs font-semibold">{user.status}</span></p>
                     <p><b>Age:</b> {user.age}</p>
                     <p><b>Contact No.:</b> {user.contactNumber}</p>
                     <p><b>Barangay:</b> {user.barangay}</p>
                     <p><b>Barrio:</b> {user.barrio}</p>
-                    <a
-                      href={imgURL}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 underline hover:text-blue-800 inline-block mt-1"
-                    >
-                      View Full ID
-                    </a>
+
                   </div>
                 </div>
 
                 {/* Right: ID Image + Actions */}
-                <div className="flex flex-col items-center gap-2 min-w-[9rem]">
+                <div className="flex flex-col items-center gap-4 min-w-[10rem]">
                   <img
                     src={imgURL}
                     alt="Valid ID"
-                    className="w-32 h-20 object-cover border rounded-md cursor-pointer hover:scale-105 transition-transform"
+                    className="w-36 h-24 object-cover border-2 border-red-200 rounded-xl cursor-pointer hover:scale-105 transition-transform shadow-md"
                     onClick={() => setSelectedImage(imgURL)}
                   />
-                  {/* Approve executes immediately */}
-                  <button
-                    onClick={() => approveUser(user._id)}
-                    className="w-full bg-green-600 hover:bg-green-700 text-white text-sm py-1 rounded"
-                  >
-                    Approve
-                  </button>
-                  {/* Reject opens modal */}
-                  <button
-                    onClick={() => handleRejectClick(user._id)}
-                    className="w-full bg-red-600 hover:bg-red-700 text-white text-sm py-1 rounded"
-                  >
-                    Reject
-                  </button>
+                  <div className="flex flex-col gap-2 w-full">
+                    <button
+                      onClick={() => approveUser(user._id)}
+                      className="w-full bg-gradient-to-r from-green-500 to-green-600 text-white py-2 px-4 rounded-xl font-semibold hover:from-green-600 hover:to-green-700 transition-all shadow-md"
+                    >
+                      Approve
+                    </button>
+                    <button
+                      onClick={() => handleRejectClick(user._id)}
+                      className="w-full bg-gradient-to-r from-red-500 to-red-600 text-white py-2 px-4 rounded-xl font-semibold hover:from-red-600 hover:to-red-700 transition-all shadow-md"
+                    >
+                      Reject
+                    </button>
+                  </div>
                 </div>
               </div>
             );
@@ -136,20 +128,20 @@ const PendingUsers = () => {
       {/* Image Modal */}
       {selectedImage && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50"
           onClick={() => setSelectedImage(null)}
         >
           <div
-            className="bg-white rounded-lg p-4 max-w-3xl max-h-[90vh] overflow-auto relative"
+            className="bg-white rounded-2xl p-6 max-w-3xl max-h-[90vh] overflow-auto relative shadow-2xl border-2 border-red-200"
             onClick={(e) => e.stopPropagation()}
           >
             <img
               src={selectedImage}
               alt="Full ID"
-              className="rounded max-w-full max-h-[80vh] mx-auto"
+              className="rounded-xl max-w-full max-h-[80vh] mx-auto shadow-lg"
             />
             <button
-              className="absolute top-2 right-3 text-red-600 font-bold text-xl"
+              className="absolute top-4 right-4 text-red-600 hover:text-red-800 text-2xl font-bold bg-white/80 rounded-full p-1 shadow-md"
               onClick={() => setSelectedImage(null)}
             >
               ×
@@ -165,22 +157,22 @@ const PendingUsers = () => {
           onClick={() => setModalOpen(false)}
         >
           <div
-            className="bg-white rounded-xl shadow-xl w-80 max-w-full p-6 border-t-4 border-red-600"
+            className="bg-gradient-to-br from-white via-red-50 to-orange-50 rounded-2xl shadow-xl w-80 max-w-full p-6 border-t-4 border-red-600"
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 className="text-center text-lg font-bold mb-3 text-gray-800">Reject User?</h2>
-            <p className="mb-5 text-center text-red-600">
+            <h2 className="text-center text-xl font-bold mb-4 text-gray-800">Reject User?</h2>
+            <p className="mb-6 text-center text-red-600 font-medium">
               Are you sure you want to reject this user? This action cannot be undone.
             </p>
-            <div className="flex justify-center gap-3">
+            <div className="flex justify-center gap-4">
               <button
-                className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 transition"
+                className="px-5 py-2 rounded-xl bg-gray-200 hover:bg-gray-300 transition-all font-semibold"
                 onClick={() => setModalOpen(false)}
               >
                 Cancel
               </button>
               <button
-                className="px-4 py-2 rounded-lg text-white font-semibold transition bg-gradient-to-r from-red-500 via-red-600 to-red-700 hover:from-red-600 hover:to-red-800"
+                className="px-5 py-2 rounded-xl text-white font-semibold transition-all bg-gradient-to-r from-red-500 via-red-600 to-red-700 hover:from-red-600 hover:to-red-800 shadow-md"
                 onClick={handleConfirmReject}
               >
                 Reject
@@ -189,7 +181,6 @@ const PendingUsers = () => {
           </div>
         </div>
       )}
-
     </div>
   );
 };

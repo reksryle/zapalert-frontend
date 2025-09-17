@@ -61,11 +61,11 @@ const AllUsers = () => {
   }, []);
 
   const getRoleColor = (role) => {
-    return role === "responder" ? "text-red-600" : "text-blue-600";
+    return role === "responder" ? "bg-red-100 text-red-800" : "bg-blue-100 text-blue-800";
   };
 
   const getStatusColor = (status) => {
-    return status === "approved" ? "text-green-600" : "text-orange-500";
+    return status === "approved" ? "bg-green-100 text-green-800" : "bg-orange-100 text-orange-800";
   };
 
   const handleApprove = async (id) => {
@@ -105,30 +105,47 @@ const AllUsers = () => {
   const barrioOptions = [...new Set(allUsers.map((u) => u.barrio).filter(Boolean))].sort();
 
   return (
-    <div>
-      <h1 className="text-2xl font-semibold mb-4">All Registered Users</h1>
+    <div className="bg-gradient-to-br from-white via-red-50 to-orange-50 rounded-2xl shadow-lg p-6">
+      <h1 className="text-2xl font-bold mb-6 text-gray-800">All Registered Users</h1>
 
-      <div className="flex flex-wrap gap-4 mb-4">
-        <select className="p-2 border rounded" value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}>
+      {/* Filters */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+        <select 
+          className="p-3 border-2 border-red-200 rounded-xl bg-white/80 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-400"
+          value={roleFilter} 
+          onChange={(e) => setRoleFilter(e.target.value)}
+        >
           <option value="All">All Roles</option>
           <option value="Resident">Resident</option>
           <option value="Responder">Responder</option>
         </select>
 
-        <select className="p-2 border rounded" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+        <select 
+          className="p-3 border-2 border-red-200 rounded-xl bg-white/80 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-400"
+          value={statusFilter} 
+          onChange={(e) => setStatusFilter(e.target.value)}
+        >
           <option value="All">All Statuses</option>
           <option value="Approved">Approved</option>
           <option value="Pending">Pending</option>
         </select>
 
-        <select className="p-2 border rounded" value={barangayFilter} onChange={(e) => setBarangayFilter(e.target.value)}>
+        <select 
+          className="p-3 border-2 border-red-200 rounded-xl bg-white/80 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-400"
+          value={barangayFilter} 
+          onChange={(e) => setBarangayFilter(e.target.value)}
+        >
           <option value="All">All Barangays</option>
           {barangayOptions.map((b, i) => (
             <option key={i} value={b}>{b}</option>
           ))}
         </select>
 
-        <select className="p-2 border rounded" value={barrioFilter} onChange={(e) => setBarrioFilter(e.target.value)}>
+        <select 
+          className="p-3 border-2 border-red-200 rounded-xl bg-white/80 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-400"
+          value={barrioFilter} 
+          onChange={(e) => setBarrioFilter(e.target.value)}
+        >
           <option value="All">All Barrios</option>
           {barrioOptions.map((b, i) => (
             <option key={i} value={b}>{b}</option>
@@ -137,36 +154,38 @@ const AllUsers = () => {
 
         <input
           type="text"
-          placeholder="Search"
-          className="p-2 border rounded"
+          placeholder="Search users..."
+          className="p-3 border-2 border-red-200 rounded-xl bg-white/80 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-400"
           value={searchUsername}
           onChange={(e) => setSearchUsername(e.target.value)}
         />
       </div>
 
       {filteredUsers.length === 0 ? (
-        <p>No matching users found.</p>
+        <div className="text-center py-12 bg-white/80 rounded-2xl shadow-inner">
+          <p className="text-gray-600 text-lg">No matching users found.</p>
+        </div>
       ) : (
-        <div className="overflow-x-auto rounded shadow bg-white">
+        <div className="overflow-x-auto rounded-2xl shadow-lg bg-white/80 backdrop-blur-sm">
           <table className="min-w-full text-left text-sm">
-            <thead className="bg-gray-800 text-white">
+            <thead className="bg-gradient-to-r from-red-500 to-orange-500 text-white">
               <tr>
-                <th className="py-2 px-4">Name</th>
-                <th className="py-2 px-4">Username</th>
-                <th className="py-2 px-4">Role</th>
-                <th className="py-2 px-4">Status</th>
-                <th className="py-2 px-4">Contact #</th>
-                <th className="py-2 px-4">Age</th>
-                <th className="py-2 px-4">Barrio</th>
-                <th className="py-2 px-4">Barangay</th>
+                <th className="py-3 px-4 rounded-tl-2xl">Name</th>
+                <th className="py-3 px-4">Username</th>
+                <th className="py-3 px-4">Role</th>
+                <th className="py-3 px-4">Status</th>
+                <th className="py-3 px-4">Contact #</th>
+                <th className="py-3 px-4">Age</th>
+                <th className="py-3 px-4">Barrio</th>
+                <th className="py-3 px-4 rounded-tr-2xl">Barangay</th>
               </tr>
             </thead>
             <tbody>
               {filteredUsers.map((user) => (
                 <tr
                   key={user._id}
-                  className={`border-b hover:bg-gray-100 cursor-pointer ${
-                    selectedUser?._id === user._id ? "bg-blue-50" : ""
+                  className={`border-b border-red-100 hover:bg-red-50/50 cursor-pointer transition-all ${
+                    selectedUser?._id === user._id ? "bg-red-100" : ""
                   }`}
                   onClick={() => {
                     setSelectedUser(user);
@@ -174,14 +193,22 @@ const AllUsers = () => {
                     setDeleteConfirmInput("");
                   }}
                 >
-                  <td className="py-2 px-4">{user.firstName} {user.lastName}</td>
-                  <td className="py-2 px-4">{user.username}</td>
-                  <td className={`py-2 px-4 capitalize ${getRoleColor(user.role)}`}>{user.role}</td>
-                  <td className={`py-2 px-4 capitalize ${getStatusColor(user.status)}`}>{user.status}</td>
-                  <td className="py-2 px-4">{user.contactNumber || "N/A"}</td>
-                  <td className="py-2 px-4">{user.age ?? "N/A"}</td>
-                  <td className="py-2 px-4">{user.barrio || "—"}</td>
-                  <td className="py-2 px-4">{user.barangay}</td>
+                  <td className="py-3 px-4 font-medium">{user.firstName} {user.lastName}</td>
+                  <td className="py-3 px-4">{user.username}</td>
+                  <td className="py-3 px-4">
+                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getRoleColor(user.role)}`}>
+                      {user.role}
+                    </span>
+                  </td>
+                  <td className="py-3 px-4">
+                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getStatusColor(user.status)}`}>
+                      {user.status}
+                    </span>
+                  </td>
+                  <td className="py-3 px-4">{user.contactNumber || "N/A"}</td>
+                  <td className="py-3 px-4">{user.age ?? "N/A"}</td>
+                  <td className="py-3 px-4">{user.barrio || "—"}</td>
+                  <td className="py-3 px-4">{user.barangay}</td>
                 </tr>
               ))}
             </tbody>
@@ -190,18 +217,22 @@ const AllUsers = () => {
       )}
 
       {selectedUser && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
-          <div className="bg-white p-6 rounded-lg w-full max-w-md sm:max-w-lg max-h-[80vh] overflow-y-auto relative shadow-lg">
-            <button className="absolute top-2 right-3 text-xl font-bold" onClick={() => setSelectedUser(null)}>×</button>
+        <div className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50">
+          <div className="bg-gradient-to-br from-white via-red-50 to-orange-50 rounded-2xl p-6 w-full max-w-md sm:max-w-lg max-h-[80vh] overflow-y-auto relative shadow-2xl border border-red-200">
+            <button className="absolute top-4 right-4 text-2xl text-red-600 hover:text-red-800 transition-colors" onClick={() => setSelectedUser(null)}>×</button>
 
-            <h2 className="text-lg font-semibold mb-4">User Information</h2>
+            <h2 className="text-xl font-bold mb-4 text-gray-800">User Information</h2>
 
             <div className="mb-4">
-              <div className="flex border-b">
+              <div className="flex border-b border-red-200">
                 {["Profile", "Valid ID", "Actions"].map((tab) => (
                   <button
                     key={tab}
-                    className={`px-4 py-2 font-medium ${selectedTab === tab ? "border-b-2 border-blue-600 text-blue-600" : "text-gray-600 hover:text-blue-600"}`}
+                    className={`px-4 py-2 font-semibold transition-all ${
+                      selectedTab === tab 
+                        ? "border-b-2 border-red-600 text-red-600" 
+                        : "text-gray-600 hover:text-red-600"
+                    }`}
                     onClick={() => setSelectedTab(tab)}
                   >
                     {tab}
@@ -211,7 +242,7 @@ const AllUsers = () => {
             </div>
 
             {selectedTab === "Profile" && (
-              <div className="space-y-2">
+              <div className="space-y-3 text-sm">
                 <p><strong>Name:</strong> {selectedUser.firstName} {selectedUser.lastName}</p>
                 <p><strong>Username:</strong> {selectedUser.username}</p>
                 <p><strong>Contact Number:</strong> {selectedUser.contactNumber}</p>
@@ -235,33 +266,39 @@ const AllUsers = () => {
                     <img
                       src={`${BASE_IMAGE_URL}/${selectedUser.idImagePath.replace(/\\/g, "/")}`}
                       alt="Valid ID"
-                      className="w-[350px] h-[220px] object-cover border rounded shadow hover:opacity-90 transition-transform duration-300 group-hover:scale-105"
+                      className="w-[350px] h-[220px] object-cover border-2 border-red-200 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 group-hover:scale-105"
                     />
-                    <span className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-xs bg-black text-white rounded px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                    <span className="absolute bottom-3 left-1/2 transform -translate-x-1/2 text-xs bg-black/80 text-white rounded-full px-3 py-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                       View Full Picture
                     </span>
                   </a>
                 ) : (
-                  <p className="text-center text-gray-500">No ID uploaded</p>
+                  <p className="text-center text-gray-500 py-8">No ID uploaded</p>
                 )}
               </div>
             )}
 
             {selectedTab === "Actions" && (
-              <div className="mt-6 space-y-3">
+              <div className="mt-6 space-y-4">
                 {selectedUser.status === "pending" && (
-                  <div className="flex gap-2">
-                    <button className="bg-green-600 hover:bg-green-700 text-white px-4 py-1 rounded w-full" onClick={() => handleApprove(selectedUser._id)}>
+                  <div className="flex gap-3">
+                    <button 
+                      className="flex-1 bg-gradient-to-r from-green-500 to-green-600 text-white px-4 py-2 rounded-xl hover:from-green-600 hover:to-green-700 transition-all shadow-lg"
+                      onClick={() => handleApprove(selectedUser._id)}
+                    >
                       Approve
                     </button>
-                    <button className="bg-red-600 hover:bg-red-700 text-white px-4 py-1 rounded w-full" onClick={() => handleReject(selectedUser._id)}>
+                    <button 
+                      className="flex-1 bg-gradient-to-r from-red-500 to-red-600 text-white px-4 py-2 rounded-xl hover:from-red-600 hover:to-red-700 transition-all shadow-lg"
+                      onClick={() => handleReject(selectedUser._id)}
+                    >
                       Reject
                     </button>
                   </div>
                 )}
                 {selectedUser.status === "approved" && (
                   <>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-gray-600 text-center">
                       Type <strong>delete {selectedUser.username}</strong> to confirm:
                     </p>
                     <input
@@ -269,12 +306,12 @@ const AllUsers = () => {
                       value={deleteConfirmInput}
                       onChange={(e) => setDeleteConfirmInput(e.target.value)}
                       placeholder="Enter confirmation"
-                      className="w-full p-2 border rounded"
+                      className="w-full p-3 border-2 border-red-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-400"
                     />
                     <button
-                      className={`w-full mt-2 py-2 px-4 rounded text-white ${
+                      className={`w-full py-3 px-4 rounded-xl text-white font-semibold transition-all shadow-lg ${
                         deleteConfirmInput === `delete ${selectedUser.username}`
-                          ? "bg-red-600 hover:bg-red-700"
+                          ? "bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800"
                           : "bg-gray-400 cursor-not-allowed"
                       }`}
                       onClick={() => handleDelete(selectedUser._id)}

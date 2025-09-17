@@ -1,10 +1,10 @@
-// frontend/src/pages/Login.jsx
 import React, { useState, useEffect } from "react";
 import axios from "../api/axios";
 import { useNavigate, useLocation } from "react-router-dom";
 import { toast, ToastContainer, Slide } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import useNetworkStatus from "../hooks/useNetworkStatus";
+
 
 const Login = () => {
   const navigate = useNavigate();
@@ -13,12 +13,9 @@ const Login = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showModal, setShowModal] = useState(false);
-
-  // ✅ Loading screen state
   const [isLoading, setIsLoading] = useState(true);
-
-  // ✅ Step state (0 = Welcome, 1 = Intro, 2..n = tutorial steps)
   const [step, setStep] = useState(0);
+  const [showPassword, setShowPassword] = useState(false);
 
   const toastStyle = {
     toastId: "loginToast",
@@ -46,7 +43,6 @@ const Login = () => {
   };
 
   useEffect(() => {
-    // ✅ Simulate a short loading time (2s)
     const timer = setTimeout(() => setIsLoading(false), 2000);
 
     axios
@@ -62,7 +58,6 @@ const Login = () => {
         }
       })
       .catch(() => {
-        // ✅ First-time tutorial check (persistent until user clears app data)
         if (!localStorage.getItem("popupShown")) {
           const modalTimer = setTimeout(() => {
             setShowModal(true);
@@ -94,62 +89,39 @@ const Login = () => {
     }
   };
 
-  // ✅ Minimal Modern ZapAlert Loader
   if (isLoading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-red-600 to-red-800">
         <div className="relative w-48 h-48 flex items-center justify-center mb-6">
-          {/* Rotating ring */}
           <div className="absolute inset-0 rounded-full border-8 border-transparent border-t-yellow-400 animate-spin"></div>
-          {/* Logo */}
           <img
             src="/icons/zapalert-logo.png"
             alt="ZapAlert Logo"
             className="w-32 h-32 drop-shadow-[0_0_20px_rgba(0,0,0,0.8)] animate-bounce"
           />
         </div>
-        {/* Blinking Loading Text */}
         <p className="text-white text-2xl font-bold animate-blink">Loading...</p>
 
-        {/* Loader Animations */}
         <style>
           {`
-            @keyframes bounce {
-              0%, 100% { transform: translateY(0); }
-              50% { transform: translateY(-15px); }
-            }
-            .animate-bounce {
-              animation: bounce 1s infinite;
-            }
-
-            @keyframes spin {
-              0% { transform: rotate(0deg); }
-              100% { transform: rotate(360deg); }
-            }
-            .animate-spin {
-              animation: spin 2s linear infinite;
-            }
-
-            @keyframes blink {
-              0%, 50%, 100% { opacity: 1; }
-              25%, 75% { opacity: 0; }
-            }
-            .animate-blink {
-              animation: blink 1s infinite;
-            }
+            @keyframes bounce { 0%,100%{transform:translateY(0);}50%{transform:translateY(-15px);} }
+            .animate-bounce { animation: bounce 1s infinite; }
+            @keyframes spin { 0%{transform:rotate(0deg);}100%{transform:rotate(360deg);} }
+            .animate-spin { animation: spin 2s linear infinite; }
+            @keyframes blink { 0%,50%,100%{opacity:1;}25%,75%{opacity:0;} }
+            .animate-blink { animation: blink 1s infinite; }
           `}
         </style>
       </div>
     );
   }
 
-  // ✅ Tutorial steps
   const steps = [
     {
       img: null,
       title: "How to Install PWA ZapAlert!",
       desc: "Follow these quick steps to install ZapAlert on your device.",
-      subtitle: "if the install button doesn’t appear automatically.",
+      subtitle: "if the install button doesn't appear automatically.",
     },
     {
       img: "/tutorial/step1.gif",
@@ -174,32 +146,32 @@ const Login = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-red-600 to-red-800 flex items-center justify-center p-4 relative">
+    <div className="min-h-screen bg-gradient-to-br from-red-500 via-red-600 to-orange-500 flex items-center justify-center p-4 relative">
       <ToastContainer newestOnTop limit={3} />
 
       {/* Login Card */}
       <form
         onSubmit={handleLogin}
-        className="relative bg-white/90 backdrop-blur-md rounded-xl shadow-lg w-full max-w-md p-8 space-y-5"
+        className="relative bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl w-full max-w-md p-8 space-y-6 border border-white/30"
       >
         {/* Logo & Title */}
-        <div className="flex flex-col items-center text-center mb-6 animate-fadeIn">
+        <div className="flex flex-col items-center text-center mb-6">
           <img
-            src="/icons/zapalert-full-logo.png"
+            src="/icons/zapalert-logo.png"
             alt="ZAPALERT Logo"
-            className="h-24 w-auto mb-3"
+            className="h-20 w-auto mb-4 drop-shadow-lg"
           />
-          <h1 className="text-4xl font-extrabold text-red-600 tracking-wide drop-shadow-sm">
+          <h1 className="text-4xl font-black text-red-700 tracking-wider drop-shadow-sm">
             ZAPALERT
           </h1>
-          <p className="text-gray-500 text-sm mt-1 max-w-xs">
+          <p className="text-gray-600 text-sm mt-2 max-w-xs">
             Emergency Monitoring & Reporting System
           </p>
         </div>
 
         {/* Guide */}
         <div className="mb-4">
-          <h2 className="text-xl font-semibold text-red-800 text-left">
+          <h2 className="text-2xl font-bold text-gray-800 text-left">
             Sign in
           </h2>
           <p className="text-sm text-gray-600 text-left">
@@ -208,51 +180,62 @@ const Login = () => {
         </div>
 
         {/* Inputs */}
-        <input
-          type="text"
-          placeholder="Username"
-          className="w-full px-3 py-2 font-semibold text-gray-900 bg-transparent border-2 border-red-400 rounded-md focus:ring-2 focus:ring-red-500 transition"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          required
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          className="w-full px-3 py-2 font-semibold text-gray-900 bg-transparent border-2 border-red-400 rounded-md focus:ring-2 focus:ring-red-500 transition"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
+        <div className="space-y-4">
+          <input
+            type="text"
+            placeholder="Username"
+            className="w-full px-4 py-3 font-medium text-gray-900 bg-white/80 backdrop-blur-sm border-2 border-red-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-300 focus:border-red-400 transition-all"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            required
+          />
+          <div className="relative w-full">
+            <input
+              type={showPassword ? "text" : "password"}
+              placeholder="Password"
+              className="w-full px-4 py-3 pr-12 font-medium text-gray-900 bg-white/80 backdrop-blur-sm border-2 border-red-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-300 focus:border-red-400 transition-all"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-red-600 text-sm font-semibold"
+            >
+              {showPassword ? "Hide" : "Show"}
+            </button>
+          </div>
+        </div>
 
         {/* Login Button */}
         <button
           type="submit"
-          className="w-full py-3 bg-gradient-to-r from-orange-400 to-red-600 text-white font-semibold rounded-md hover:scale-105 transition"
+          className="w-full py-3 bg-gradient-to-r from-red-600 via-red-500 to-orange-500 text-white font-bold rounded-xl hover:scale-105 hover:shadow-xl transition-all duration-300 shadow-lg"
         >
           Login
         </button>
 
         <p className="text-center text-sm text-gray-600">
-          Don’t have an account?{" "}
+          Don't have an account?{" "}
           <a
             href="/signup"
-            className="text-red-500 font-semibold hover:underline"
+            className="text-red-600 font-semibold hover:text-red-800 hover:underline transition-colors"
           >
             Sign up
           </a>
         </p>
       </form>
 
-      {/* ✅ Help Button (login page only) */}
+      {/* Help Button */}
       {!showModal && (
         <button
-         type="button"
+          type="button"
           onClick={() => {
             setStep(0);
             setShowModal(true);
           }}
-          className="absolute top-6 right-6 w-10 h-10 flex items-center justify-center rounded-full bg-gradient-to-r from-red-600 to-orange-400 text-white font-bold shadow-lg hover:scale-110 transition"
+          className="fixed top-6 right-6 w-12 h-12 flex items-center justify-center rounded-2xl bg-gradient-to-r from-red-600 to-orange-500 text-white font-bold shadow-2xl hover:scale-110 transition-all duration-300 border-2 border-white/30 backdrop-blur-lg"
           title="How to install ZapAlert"
         >
           ?
@@ -261,19 +244,18 @@ const Login = () => {
 
       {/* Tutorial Popup */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
           <div
             key={step}
-            className="bg-gradient-to-br from-white to-gray-100 rounded-xl max-w-sm w-full p-6 space-y-4 text-gray-800 relative shadow-xl transform transition-all duration-500 ease-out scale-90 opacity-0 animate-popup"
-            style={{ animation: "popupAnim 0.6s forwards" }}
+            className="bg-gradient-to-br from-white via-red-50 to-orange-50 rounded-3xl max-w-sm w-full mx-4 p-6 space-y-5 text-gray-800 relative shadow-2xl border border-white/30 transform animate-tutorial-popup"
           >
             {/* Step 0 = Welcome */}
             {step === 0 ? (
               <>
-                <h3 className="text-xl font-bold mb-3 text-red-700 text-center">
+                <h3 className="text-2xl font-extrabold text-red-700 text-center">
                   Welcome to ZapAlert!
                 </h3>
-                <p className="text-sm text-gray-600 text-center mb-4">
+                <p className="text-sm text-gray-700 text-center leading-relaxed">
                   ZapAlert is an emergency alert and monitoring system for{" "}
                   <strong>Barangay Zapatera</strong>. It allows residents to
                   report incidents and ensures quick notifications for
@@ -282,7 +264,7 @@ const Login = () => {
                 </p>
                 <button
                   onClick={() => setStep(1)}
-                  className="w-full py-2 bg-gradient-to-r from-red-600 to-orange-400 text-white font-semibold rounded-md hover:scale-105 transition"
+                  className="w-full py-3 bg-gradient-to-r from-red-600 to-orange-500 text-white font-bold rounded-xl hover:scale-105 hover:shadow-xl transition-all duration-300"
                 >
                   Next
                 </button>
@@ -302,10 +284,10 @@ const Login = () => {
                     key={step}
                     src={`${steps[step - 1].img}?${Date.now()}`}
                     alt={steps[step - 1].title}
-                    className="w-full rounded-md mb-3 shadow animate-fadeSlide"
+                    className="w-full rounded-xl mb-4 shadow-lg border-2 border-red-100 animate-fadeSlide"
                   />
                 )}
-                <p className="text-sm text-gray-600 text-center mb-4 animate-fadeSlide">
+                <p className="text-sm text-gray-700 text-center mb-4 leading-relaxed animate-fadeSlide">
                   {steps[step - 1].desc}
                 </p>
 
@@ -314,23 +296,22 @@ const Login = () => {
                   {step > 0 && (
                     <button
                       onClick={() => setStep(step - 1)}
-                      className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
+                      className="px-4 py-2 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition-all font-semibold"
                     >
                       Back
                     </button>
                   )}
-
                   {step < steps.length ? (
                     <button
                       onClick={() => setStep(step + 1)}
-                      className="px-4 py-2 bg-gradient-to-r from-red-600 to-orange-400 text-white font-semibold rounded-md hover:scale-105 transition"
+                      className="px-4 py-2 bg-gradient-to-r from-red-600 to-orange-500 text-white font-semibold rounded-xl hover:scale-105 transition-all"
                     >
                       Next
                     </button>
                   ) : (
                     <button
                       onClick={() => setShowModal(false)}
-                      className="px-4 py-2 bg-gradient-to-r from-red-600 to-orange-400 text-white font-semibold rounded-md hover:scale-105 transition"
+                      className="px-4 py-2 bg-gradient-to-r from-red-600 to-orange-500 text-white font-semibold rounded-xl hover:scale-105 transition-all"
                     >
                       Continue to Login
                     </button>
@@ -338,12 +319,14 @@ const Login = () => {
                 </div>
 
                 {/* Step Indicator */}
-                <div className="flex justify-center mt-3 space-x-2">
+                <div className="flex justify-center mt-4 space-x-2">
                   {[0, ...steps.map((_, i) => i + 1)].map((s) => (
                     <div
                       key={s}
-                      className={`w-2.5 h-2.5 rounded-full ${
-                        s === step ? "bg-red-600" : "bg-gray-300"
+                      className={`w-3 h-3 rounded-full transition-all ${
+                        s === step 
+                          ? "bg-red-600 scale-110" 
+                          : "bg-gray-300"
                       }`}
                     />
                   ))}
@@ -354,22 +337,28 @@ const Login = () => {
         </div>
       )}
 
-      {/* Popup Animation Keyframes */}
+      {/* Animation styles */}
       <style>
         {`
-        @keyframes popupAnim {
-          0% { transform: scale(0.95) translateY(20px); opacity: 0; }
-          60% { transform: scale(1.02) translateY(0); opacity: 1; }
-          100% { transform: scale(1) translateY(0); opacity: 1; }
+        @keyframes tutorial-popup {
+          0% {
+            opacity: 0;
+            transform: scale(0.8) translateY(20px);
+          }
+          100% {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+          }
         }
-
         @keyframes fadeSlide {
           0% { opacity: 0; transform: translateY(15px); }
           100% { opacity: 1; transform: translateY(0); }
         }
-
+        .animate-tutorial-popup {
+          animation: tutorial-popup 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
         .animate-fadeSlide {
-          animation: fadeSlide 0.6s ease-in-out;
+          animation: fadeSlide 0.6s ease-out forwards;
         }
         `}
       </style>

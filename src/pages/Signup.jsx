@@ -218,26 +218,26 @@ const Signup = () => {
 
   // ✅ Signup form
   return (
-    <div className="min-h-screen bg-gradient-to-br from-red-600 to-red-800 flex items-center justify-center p-4 relative">
+    <div className="min-h-screen bg-gradient-to-br from-red-500 via-red-600 to-orange-500 flex items-center justify-center p-4 relative">
       <ToastContainer newestOnTop limit={3} />
 
       <form
         onSubmit={handleSubmit}
         noValidate
-        className="relative bg-white/90 backdrop-blur-md rounded-xl shadow-lg w-full max-w-md p-6 space-y-4"
+        className="relative bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl w-full max-w-md p-8 space-y-6 border border-white/30"
       >
-        <img
-          src="/icons/zapalert-icon-512.png"
-          alt="ZapAlert Logo"
-          className="absolute inset-0 w-full h-full object-contain opacity-10 pointer-events-none"
-        />
 
-        <div className="relative z-10 space-y-4">
-          <div className="text-center mb-2">
-            <h2 className="text-2xl font-bold text-red-700">Create Account</h2>
-            <p className="text-gray-600 text-sm">Fill in your details</p>
-          </div>
 
+        <div className="text-center mb-4">
+          <h2 className="text-2xl font-bold text-gray-800">
+            Create Account
+          </h2>
+          <p className="text-sm text-gray-600">
+            Fill in your details to register
+          </p>
+        </div>
+
+        <div className="space-y-4">
           {/* First / Last Name */}
           <div className="grid grid-cols-2 gap-4">
             <input
@@ -246,7 +246,7 @@ const Signup = () => {
               placeholder="First Name"
               value={form.firstName}
               onChange={handleChange}
-              className="w-full px-3 py-2 font-semibold text-gray-900 bg-transparent border-2 border-red-400 rounded-md focus:ring-2 focus:ring-red-500"
+              className="w-full px-4 py-3 font-medium text-gray-900 bg-white/80 backdrop-blur-sm border-2 border-red-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-300 focus:border-red-400 transition-all"
             />
             <input
               type="text"
@@ -254,7 +254,7 @@ const Signup = () => {
               placeholder="Last Name"
               value={form.lastName}
               onChange={handleChange}
-              className="w-full px-3 py-2 font-semibold text-gray-900 bg-transparent border-2 border-red-400 rounded-md focus:ring-2 focus:ring-red-500"
+              className="w-full px-4 py-3 font-medium text-gray-900 bg-white/80 backdrop-blur-sm border-2 border-red-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-300 focus:border-red-400 transition-all"
             />
           </div>
 
@@ -270,7 +270,7 @@ const Signup = () => {
                 handleChange(e);
               }
             }}
-            className="w-full px-3 py-2 font-semibold text-gray-900 bg-transparent border-2 border-red-400 rounded-md focus:ring-2 focus:ring-red-500"
+            className="w-full px-4 py-3 font-medium text-gray-900 bg-white/80 backdrop-blur-sm border-2 border-red-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-300 focus:border-red-400 transition-all"
           />
 
           {/* Username */}
@@ -281,7 +281,7 @@ const Signup = () => {
               placeholder="Username"
               value={form.username}
               onChange={handleChange}
-              className="w-full px-3 py-2 font-semibold text-gray-900 bg-transparent border-2 border-red-400 rounded-md focus:ring-2 focus:ring-red-500"
+              className="w-full px-4 py-3 font-medium text-gray-900 bg-white/80 backdrop-blur-sm border-2 border-red-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-300 focus:border-red-400 transition-all"
             />
           </div>
 
@@ -293,12 +293,12 @@ const Signup = () => {
               placeholder="Password"
               value={form.password}
               onChange={handleChange}
-              className="w-full px-3 py-2 font-semibold text-gray-900 bg-transparent border-2 border-red-400 rounded-md focus:ring-2 focus:ring-red-500 pr-12"
+              className="w-full px-4 py-3 font-medium text-gray-900 bg-white/80 backdrop-blur-sm border-2 border-red-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-300 focus:border-red-400 transition-all pr-12"
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-600 hover:text-red-600"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-600 hover:text-red-600 font-medium"
             >
               {showPassword ? "Hide" : "Show"}
             </button>
@@ -315,7 +315,7 @@ const Signup = () => {
               if (/^\d{0,11}$/.test(value)) handleChange(e);
             }}
             maxLength={11}
-            className="w-full px-3 py-2 font-semibold text-gray-900 bg-transparent border-2 border-red-400 rounded-md focus:ring-2 focus:ring-red-500"
+            className="w-full px-4 py-3 font-medium text-gray-900 bg-white/80 backdrop-blur-sm border-2 border-red-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-300 focus:border-red-400 transition-all"
           />
 
           {/* Barrio + Barangay */}
@@ -325,7 +325,7 @@ const Signup = () => {
               name="barangay"
               value="Zapatera"
               readOnly
-              className="col-span-1 px-3 py-2 font-semibold text-gray-700 border-2 border-red-400 rounded-md bg-gray-100"
+              className="col-span-1 px-3 py-3 font-medium text-gray-700 border-2 border-red-200 rounded-xl bg-gray-100"
             />
             <div className="col-span-2">
               <Select
@@ -337,12 +337,21 @@ const Signup = () => {
                 styles={{
                   control: (base) => ({
                     ...base,
-                    borderColor: "#f87171",
+                    borderColor: "#fecaca",
                     borderWidth: "2px",
-                    borderRadius: "0.375rem",
-                    padding: "2px 4px",
+                    borderRadius: "12px",
+                    padding: "4px 8px",
                     boxShadow: "none",
-                    backgroundColor: "transparent",
+                    backgroundColor: "rgba(255, 255, 255, 0.8)",
+                    minHeight: "52px",
+                    "&:hover": {
+                      borderColor: "#f87171",
+                    },
+                  }),
+                  placeholder: (base) => ({
+                    ...base,
+                    color: "#9ca3af",
+                    fontSize: "0.95rem",
                   }),
                 }}
               />
@@ -354,7 +363,7 @@ const Signup = () => {
             name="role"
             value={form.role}
             onChange={handleChange}
-            className="w-full px-3 py-2 font-semibold text-gray-900 bg-transparent border-2 border-red-400 rounded-md focus:ring-2 focus:ring-red-500"
+            className="w-full px-4 py-3 font-medium text-gray-900 bg-white/80 backdrop-blur-sm border-2 border-red-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-300 focus:border-red-400 transition-all"
           >
             <option value="resident">Resident</option>
             <option value="responder">Responder</option>
@@ -364,11 +373,11 @@ const Signup = () => {
           <div>
             <label
               htmlFor="validId"
-              className="block text-sm font-semibold text-gray-700 mb-1"
+              className="block text-sm font-medium text-gray-700 mb-2"
             >
               Upload valid ID to verify your residency:
             </label>
-            <div className="flex items-center justify-between border-2 border-dashed border-red-400 rounded-md px-3 py-2 bg-gray-50">
+            <div className="flex items-center justify-between border-2 border-dashed border-red-200 rounded-xl px-4 py-3 bg-white/50">
               <input
                 type="file"
                 id="validId"
@@ -381,7 +390,7 @@ const Signup = () => {
               </span>
               <label
                 htmlFor="validId"
-                className="px-3 py-1 bg-gradient-to-r from-orange-400 to-red-600 text-white rounded-md cursor-pointer hover:scale-105 transition text-sm"
+                className="px-4 py-2 bg-gradient-to-r from-red-600 to-orange-500 text-white rounded-xl cursor-pointer hover:scale-105 transition-all text-sm font-medium shadow-md"
               >
                 Browse
               </label>
@@ -389,12 +398,12 @@ const Signup = () => {
           </div>
 
           {/* Agreement */}
-          <label className="flex items-start space-x-2 text-sm text-gray-700">
+          <label className="flex items-start space-x-3 text-sm text-gray-700">
             <input
               type="checkbox"
               checked={agree}
               onChange={(e) => setAgree(e.target.checked)}
-              className="mt-1"
+              className="mt-1 h-4 w-4 text-red-600 focus:ring-red-500 border-red-300 rounded"
             />
             <span>
               I confirm that I am of legal age (18+) or a minor with consent.  
@@ -406,8 +415,8 @@ const Signup = () => {
           <button
             type="submit"
             disabled={isSubmitting}
-            className={`w-full py-3 bg-gradient-to-r from-orange-400 to-red-600 text-white font-semibold rounded-md transition ${
-              isSubmitting ? "opacity-50 cursor-not-allowed" : "hover:scale-105"
+            className={`w-full py-3 bg-gradient-to-r from-red-600 via-red-500 to-orange-500 text-white font-bold rounded-xl hover:shadow-xl transition-all duration-300 shadow-lg ${
+              isSubmitting ? "opacity-50 cursor-not-allowed" : "hover:scale-[1.02]"
             }`}
           >
             {isSubmitting ? "Submitting..." : "Sign Up"}
@@ -415,7 +424,7 @@ const Signup = () => {
 
           <p className="text-center text-sm text-gray-600">
             Already have an account?{" "}
-            <a href="/" className="text-red-700 font-semibold hover:underline">
+            <a href="/" className="text-red-600 font-semibold hover:text-red-800 hover:underline transition-colors">
               Login
             </a>
           </p>

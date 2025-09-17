@@ -19,21 +19,34 @@ const soundMap = {
 };
 
 const HIDDEN_KEY = "responder-hidden-report-ids";
+const LATEST_KEY = "responder-latest-report-ids"; // ✅ new key for seen reports
 
 const useEmergencyReports = (enableToasts = false) => {
   const [reports, setReports] = useState([]);
   const [user, setUser] = useState(null);
   const latestIds = useRef(new Set());
 
-  // 🔒 Keep a Set of hidden IDs (per responder, persisted locally)
+  // 🔒 hidden IDs (per responder, persisted locally)
   const hiddenIdsRef = useRef(new Set());
-  // load hidden IDs on first mount
+
+  // load hidden + latest IDs on mount
   useEffect(() => {
     try {
-      const saved = JSON.parse(localStorage.getItem(HIDDEN_KEY) || "[]");
-      hiddenIdsRef.current = new Set(saved);
+      const savedHidden = JSON.parse(localStorage.getItem(HIDDEN_KEY) || "[]");
+      hiddenIdsRef.current = new Set(savedHidden);
+    } catch { /* ignore */ }
+
+    try {
+      const savedLatest = JSON.parse(localStorage.getItem(LATEST_KEY) || "[]");
+      latestIds.current = new Set(savedLatest);
     } catch { /* ignore */ }
   }, []);
+
+  const persistLatest = () => {
+    try {
+      localStorage.setItem(LATEST_KEY, JSON.stringify([...latestIds.current]));
+    } catch { /* ignore */ }
+  };
 
   // 🔊 preload sounds
   const audioReady = useRef(false);
@@ -79,7 +92,7 @@ const useEmergencyReports = (enableToasts = false) => {
 
   const fetchReports = async () => {
     try {
-      // ensure we have the latest hidden list across multiple components
+      // ensure hidden list stays synced
       try {
         const saved = JSON.parse(localStorage.getItem(HIDDEN_KEY) || "[]");
         for (const id of saved) hiddenIdsRef.current.add(id);
@@ -89,23 +102,21 @@ const useEmergencyReports = (enableToasts = false) => {
         withCredentials: true,
       });
 
-      // keep anything not globally responded (if any) AND not hidden for this responder
       const newReports = res.data
         .filter((r) => r.status !== "responded")
         .filter((r) => !hiddenIdsRef.current.has(r._id));
-
-      const incomingIds = new Set(newReports.map((r) => r._id));
 
       if (enableToasts) {
         newReports.forEach((r) => {
           if (!latestIds.current.has(r._id)) {
             toast.success(`📢 New ${r.type} report from ${r.firstName} ${r.lastName}`);
             playSoundForType(r.type);
+            latestIds.current.add(r._id); // ✅ mark seen immediately
           }
         });
+        persistLatest();
       }
 
-      latestIds.current = incomingIds;
       setReports(newReports);
     } catch (err) {
       console.error("❌ Failed to load reports:", err);
@@ -135,13 +146,8 @@ const useEmergencyReports = (enableToasts = false) => {
       await axios.delete(`${API_URL}/reports/${id}`, {
         withCredentials: true,
       });
-
-      // ✅ hide only for me
       hideLocally(id);
       toast.success("🗑️ Report declined");
-
-      // 🚫 Do NOT emit socket 'declined' here (backend already notifies the resident)
-      // (kept intentionally empty)
     } catch {
       toast.error("❌ Failed to decline report");
     }
@@ -152,12 +158,8 @@ const useEmergencyReports = (enableToasts = false) => {
       await axios.patch(`${API_URL}/reports/${id}/respond`, {}, {
         withCredentials: true,
       });
-
-      // ✅ hide only for me
       hideLocally(id);
       toast.success("✅ Marked as responded");
-
-      // 🚫 Do NOT emit socket 'responded' here (backend already notifies the resident)
     } catch {
       toast.error("❌ Failed to mark as responded");
     }
@@ -169,7 +171,6 @@ const useEmergencyReports = (enableToasts = false) => {
         withCredentials: true,
       });
       toast.success("🚓 Status: On our way");
-      // keep visible to others; we do not hide locally on on-the-way
       fetchReports();
     } catch {
       toast.error("❌ Failed to update status");
@@ -182,7 +183,6 @@ const useEmergencyReports = (enableToasts = false) => {
         withCredentials: true,
       });
       toast.success("🔵 Status: Arrived at the scene");
-      // keep report visible for history / context
       fetchReports();
     } catch {
       toast.error("❌ Failed to update arrived status");

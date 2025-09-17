@@ -167,95 +167,102 @@ const ReportsLog = () => {
     currentPage * reportsPerPage
   );
 
+  const getStatusColor = (status) => {
+    switch(status) {
+      case 'pending': return 'bg-yellow-100 text-yellow-800';
+      case 'on the way': return 'bg-blue-100 text-blue-800';
+      case 'responded': return 'bg-green-100 text-green-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      <h1 className="text-3xl font-bold mb-6">Reports Log</h1>
+    <div className="bg-gradient-to-br from-white via-red-50 to-orange-50 rounded-2xl shadow-lg p-6">
+      <h1 className="text-3xl font-bold mb-6 text-gray-800">Reports Log</h1>
 
       {/* Filters */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-        <div className="flex flex-wrap gap-2">
-          {["all", "pending", "on the way", "resolved"].map((status) => (
-            <button
-              key={status}
-              onClick={() => setStatusFilter(status)}
-              className={`px-4 py-2 rounded-md border ${
-                statusFilter === status
-                  ? "bg-blue-600 text-white"
-                  : "bg-white text-gray-700 hover:bg-gray-100"
-              }`}
-            >
-              {status === "all"
-                ? "All"
-                : status.replace("_", " ").toUpperCase()}
-            </button>
-          ))}
-        </div>
-
-        <div className="flex items-center gap-2">
-          <select
-            value={dateFilter}
-            onChange={(e) => setDateFilter(e.target.value)}
-            className="px-3 py-2 border rounded-md"
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+        {["all", "pending", "on the way", "resolved"].map((status) => (
+          <button
+            key={status}
+            onClick={() => setStatusFilter(status)}
+            className={`px-4 py-2 rounded-xl border-2 transition-all ${
+              statusFilter === status
+                ? "bg-gradient-to-r from-red-500 to-orange-500 text-white border-transparent shadow-lg"
+                : "bg-white/80 border-red-200 text-gray-700 hover:bg-red-50 hover:border-red-300"
+            }`}
           >
-            <option value="latest">Latest</option>
-            <option value="oldest">Oldest</option>
-            <option value="day">This Day</option>
-            <option value="week">This Week</option>
-            <option value="month">This Month</option>
-            <option value="specific">Choose Date</option>
-          </select>
-          {dateFilter === "specific" && (
-            <input
-              type="date"
-              value={specificDate}
-              onChange={(e) => setSpecificDate(e.target.value)}
-              className="px-3 py-2 border rounded-md"
-            />
-          )}
-        </div>
+            {status === "all" ? "All" : status.replace("_", " ").toUpperCase()}
+          </button>
+        ))}
+
+        <select
+          value={dateFilter}
+          onChange={(e) => setDateFilter(e.target.value)}
+          className="p-3 border-2 border-red-200 rounded-xl bg-white/80 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-400"
+        >
+          <option value="latest">Latest</option>
+          <option value="oldest">Oldest</option>
+          <option value="day">This Day</option>
+          <option value="week">This Week</option>
+          <option value="month">This Month</option>
+          <option value="specific">Choose Date</option>
+        </select>
+        
+        {dateFilter === "specific" && (
+          <input
+            type="date"
+            value={specificDate}
+            onChange={(e) => setSpecificDate(e.target.value)}
+            className="p-3 border-2 border-red-200 rounded-xl bg-white/80 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-400"
+          />
+        )}
 
         <input
           type="text"
-          placeholder="Search by name, description, or type"
+          placeholder="Search reports..."
           value={searchKeyword}
           onChange={(e) => setSearchKeyword(e.target.value)}
-          className="w-full md:w-64 px-4 py-2 border rounded-md"
+          className="p-3 border-2 border-red-200 rounded-xl bg-white/80 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-400"
         />
+        
         <button
           onClick={handleExportCSV}
-          className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+          className="px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 transition-all shadow-lg"
         >
           Export Sheets
         </button>
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto shadow-md rounded-lg">
-        <table className="min-w-full bg-white text-sm">
-          <thead className="bg-gray-200">
+      <div className="overflow-x-auto rounded-2xl shadow-lg bg-white/80 backdrop-blur-sm">
+        <table className="min-w-full text-sm">
+          <thead className="bg-gradient-to-r from-red-500 to-orange-500 text-white">
             <tr>
-              <th className="py-2 px-4 text-left">Full Name</th>
-              <th className="py-2 px-4 text-left">Type</th>
-              <th className="py-2 px-4 text-left">Status</th>
-              <th className="py-2 px-4 text-left">Date & Time</th>
-              <th className="py-2 px-4 text-left">View</th>
+              <th className="py-3 px-4 text-left rounded-tl-2xl">Full Name</th>
+              <th className="py-3 px-4 text-left">Type</th>
+              <th className="py-3 px-4 text-left">Status</th>
+              <th className="py-3 px-4 text-left">Date & Time</th>
+              <th className="py-3 px-4 text-left rounded-tr-2xl">View</th>
             </tr>
           </thead>
           <tbody>
             {currentReports.map((report) => (
-              <tr key={report._id} className="hover:bg-gray-100">
-                <td className="py-2 px-4">{getFullName(report)}</td>
-                <td className="py-2 px-4">{report.type}</td>
-                <td className="py-2 px-4 capitalize">
-                  {report.status.replace("_", " ")}
+              <tr key={report._id} className="hover:bg-red-50/50 border-b border-red-100 transition-all">
+                <td className="py-3 px-4 font-medium">{getFullName(report)}</td>
+                <td className="py-3 px-4">{report.type}</td>
+                <td className="py-3 px-4">
+                  <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getStatusColor(report.status)}`}>
+                    {report.status.replace("_", " ")}
+                  </span>
                 </td>
-                <td className="py-2 px-4">
+                <td className="py-3 px-4">
                   {new Date(report.createdAt).toLocaleString()}
                 </td>
-                <td className="py-2 px-4">
+                <td className="py-3 px-4">
                   <button
                     onClick={() => setSelectedReport(report)}
-                    className="text-blue-600 hover:underline text-sm"
+                    className="text-red-600 hover:text-red-800 font-semibold text-sm hover:underline transition-all"
                   >
                     Details
                   </button>
@@ -267,13 +274,15 @@ const ReportsLog = () => {
       </div>
 
       {/* Pagination */}
-      <div className="flex justify-end mt-4 gap-2">
+      <div className="flex justify-end mt-6 gap-2">
         {[...Array(totalPages)].map((_, idx) => (
           <button
             key={idx}
             onClick={() => setCurrentPage(idx + 1)}
-            className={`px-3 py-1 border rounded-md ${
-              currentPage === idx + 1 ? "bg-blue-600 text-white" : "bg-white"
+            className={`px-4 py-2 rounded-xl border-2 transition-all ${
+              currentPage === idx + 1 
+                ? "bg-gradient-to-r from-red-500 to-orange-500 text-white border-transparent shadow-lg" 
+                : "bg-white/80 border-red-200 text-gray-700 hover:bg-red-50"
             }`}
           >
             {idx + 1}
@@ -284,70 +293,54 @@ const ReportsLog = () => {
       {/* Details Modal */}
       {selectedReport && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50"
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
           onClick={() => setSelectedReport(null)}
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="bg-white rounded-md p-6 w-full max-w-2xl shadow-lg relative"
+            className="bg-gradient-to-br from-white via-red-50 to-orange-50 rounded-2xl p-6 w-full max-w-2xl shadow-2xl relative border-2 border-red-200"
           >
             <button
               onClick={() => setSelectedReport(null)}
-              className="absolute top-3 right-3 text-gray-500 hover:text-red-600 text-xl"
+              className="absolute top-4 right-4 text-2xl text-red-600 hover:text-red-800 transition-colors"
             >
               ×
             </button>
-            <h2 className="text-xl font-semibold mb-4">Report Details</h2>
-            <div className="space-y-2 text-sm">
-              <p>
-                <strong>Full Name:</strong> {getFullName(selectedReport)}
-              </p>
-              <p>
-                <strong>Username:</strong> {selectedReport.username || "N/A"}
-              </p>
-              <p>
-                <strong>Type:</strong> {selectedReport.type}
-              </p>
-              <p>
-                <strong>Status:</strong>{" "}
-                {selectedReport.status.replace("_", " ")}
-              </p>
+            
+            <h2 className="text-2xl font-bold mb-6 text-gray-800">Report Details</h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm mb-6">
+              <div className="space-y-2">
+                <p><strong>Full Name:</strong> {getFullName(selectedReport)}</p>
+                <p><strong>Username:</strong> {selectedReport.username || "N/A"}</p>
+                <p><strong>Type:</strong> {selectedReport.type}</p>
+                <p><strong>Status:</strong> {selectedReport.status.replace("_", " ")}</p>
+              </div>
+              <div className="space-y-2">
                 {selectedReport.resolvedAt && (
-              <p>
-                <strong>Resolved At:</strong>{" "}
-                {new Date(selectedReport.resolvedAt).toLocaleString()}
-              </p>
-              )}
-              <p>
-                <strong>Description:</strong> {selectedReport.description}
-              </p>
-              <p>
-                <strong>Location:</strong> {selectedReport.latitude},{" "}
-                {selectedReport.longitude}
-              </p>
-              <p>
-                <strong>Date:</strong>{" "}
-                {new Date(selectedReport.createdAt).toLocaleString()}
-              </p>
+                  <p><strong>Resolved At:</strong> {new Date(selectedReport.resolvedAt).toLocaleString()}</p>
+                )}
+                <p><strong>Description:</strong> {selectedReport.description}</p>
+                <p><strong>Location:</strong> {selectedReport.latitude}, {selectedReport.longitude}</p>
+                <p><strong>Date:</strong> {new Date(selectedReport.createdAt).toLocaleString()}</p>
+              </div>
             </div>
 
-            {/* Open Responder Actions Modal */}
-            <div className="mt-4 flex justify-center">
+            <div className="flex justify-center mb-6">
               <button
                 onClick={() => setShowActions(true)}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                className="px-6 py-2 bg-gradient-to-r from-red-500 to-orange-500 text-white rounded-xl hover:from-red-600 hover:to-orange-600 transition-all shadow-lg"
               >
                 View Responder Actions
               </button>
             </div>
 
-
-            <div className="mt-4 h-64 w-full rounded overflow-hidden">
+            <div className="h-64 w-full rounded-2xl overflow-hidden border-2 border-red-200 shadow-lg">
               <MapContainer
                 center={[selectedReport.latitude, selectedReport.longitude]}
                 zoom={16}
                 scrollWheelZoom={true}
-                className="h-full w-full z-0"
+                className="h-full w-full"
               >
                 <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
                 <Marker
@@ -365,38 +358,42 @@ const ReportsLog = () => {
       {/* Responder Actions Modal */}
       {showActions && selectedReport && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
           onClick={() => setShowActions(false)}
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="bg-white rounded-md p-6 w-full max-w-lg shadow-lg relative"
+            className="bg-gradient-to-br from-white via-red-50 to-orange-50 rounded-2xl p-6 w-full max-w-2xl shadow-2xl relative border-2 border-red-200"
           >
             <button
               onClick={() => setShowActions(false)}
-              className="absolute top-3 right-3 text-gray-500 hover:text-red-600 text-xl"
+              className="absolute top-4 right-4 text-2xl text-red-600 hover:text-red-800 transition-colors"
             >
               ×
             </button>
-            <h2 className="text-xl font-semibold mb-4">Responder Actions</h2>
+            
+            <h2 className="text-2xl font-bold mb-6 text-gray-800">Responder Actions</h2>
+            
             {selectedReport.responders && selectedReport.responders.length > 0 ? (
-              <div className="overflow-x-auto">
-                <table className="min-w-full border text-sm">
-                  <thead className="bg-gray-200">
+              <div className="overflow-x-auto rounded-2xl shadow-inner bg-white/80">
+                <table className="min-w-full text-sm">
+                  <thead className="bg-gradient-to-r from-red-500 to-orange-500 text-white">
                     <tr>
-                      <th className="py-2 px-4 text-left">Responder</th>
-                      <th className="py-2 px-4 text-left">Action</th>
-                      <th className="py-2 px-4 text-left">Timestamp</th>
+                      <th className="py-3 px-4 text-left rounded-tl-2xl">Responder</th>
+                      <th className="py-3 px-4 text-left">Action</th>
+                      <th className="py-3 px-4 text-left rounded-tr-2xl">Timestamp</th>
                     </tr>
                   </thead>
                   <tbody>
                     {selectedReport.responders.map((r, idx) => (
-                      <tr key={idx} className="hover:bg-gray-100">
-                        <td className="py-2 px-4">{r.fullName}</td>
-                        <td className="py-2 px-4 capitalize">
-                          {r.action.replace("_", " ")}
+                      <tr key={idx} className="hover:bg-red-50/50 border-b border-red-100">
+                        <td className="py-3 px-4 font-medium">{r.fullName}</td>
+                        <td className="py-3 px-4 capitalize">
+                          <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getStatusColor(r.action)}`}>
+                            {r.action.replace("_", " ")}
+                          </span>
                         </td>
-                        <td className="py-2 px-4">
+                        <td className="py-3 px-4">
                           {new Date(r.timestamp).toLocaleString()}
                         </td>
                       </tr>
@@ -405,7 +402,9 @@ const ReportsLog = () => {
                 </table>
               </div>
             ) : (
-              <p className="text-sm text-gray-600">No responder actions logged.</p>
+              <div className="text-center py-8 bg-white/80 rounded-2xl shadow-inner">
+                <p className="text-gray-600">No responder actions logged.</p>
+              </div>
             )}
           </div>
         </div>

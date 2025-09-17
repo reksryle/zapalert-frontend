@@ -26,17 +26,14 @@ const AutoOpenMarker = ({
     return () => clearTimeout(timer);
   }, []);
 
-  // Determine states based on parent arrays
+  // Determine states
   const isOnTheWay = onTheWayIds.includes(report._id);
   const isArrived = arrivedIds.includes(report._id);
 
   const handleOnTheWay = () => {
     onTheWay(report._id, report);
     if (!isOnTheWay) setOnTheWayIds((prev) => [...prev, report._id]);
-
-    setTimeout(() => {
-      if (markerRef.current && markerRef.current._popup) markerRef.current.openPopup();
-    }, 0);
+    setTimeout(() => markerRef.current?.openPopup(), 0);
   };
 
   const handleArrived = async () => {
@@ -46,10 +43,7 @@ const AutoOpenMarker = ({
     } catch (err) {
       console.error("Arrived notify failed", err);
     }
-
-    setTimeout(() => {
-      if (markerRef.current && markerRef.current._popup) markerRef.current.openPopup();
-    }, 0);
+    setTimeout(() => markerRef.current?.openPopup(), 0);
   };
 
   const handleResponded = () => onResponded(report._id);
@@ -63,7 +57,7 @@ const AutoOpenMarker = ({
     ? new L.Icon({ iconUrl: "/icons/otw.png", iconSize: [35, 35] })
     : icon;
 
-  // Format timestamp like EmergencyList
+  // Format timestamp
   const formatPHTime = (isoString) =>
     new Date(isoString).toLocaleString("en-PH", {
       timeZone: "Asia/Manila",
@@ -91,50 +85,69 @@ const AutoOpenMarker = ({
           <div className="text-xs text-gray-400 mt-1">
             𝗥𝗲𝗽𝗼𝗿𝘁𝗲𝗱 𝗮𝘁: {formatPHTime(report.createdAt)}
           </div>
-            <div className="flex gap-1 mt-2 flex-wrap">
-              {!isArrived && (
+
+          {/* Button Flow */}
+          <div className="flex flex-col gap-1 mt-2">
+            {/* Step 1: Initial */}
+            {!isOnTheWay && !isArrived && (
+              <div className="flex gap-1 w-full">
                 <button
                   onClick={handleOnTheWay}
-                  className="px-1.5 py-0.5 rounded-md bg-blue-100 text-blue-700 font-semibold hover:bg-blue-200 transition text-[10px]"
+                  className="flex-1 px-1.5 py-0.5 rounded-md bg-blue-100 text-blue-700 font-semibold hover:bg-blue-200 transition text-[10px]"
                 >
                   𝗢𝗡 𝗧𝗛𝗘 𝗪𝗔𝗬
                 </button>
-              )}
+                <button
+                  onClick={handleDecline}
+                  className="flex-1 px-1.5 py-0.5 rounded-md bg-red-100 text-red-700 font-semibold hover:bg-red-200 transition text-[10px]"
+                >
+                  𝗗𝗘𝗖𝗟𝗜𝗡𝗘
+                </button>
+              </div>
+            )}
 
-              {isOnTheWay && !isArrived && (
+            {/* Step 2: After ON THE WAY */}
+            {isOnTheWay && !isArrived && (
+              <div className="flex gap-1 w-full">
                 <button
                   onClick={handleArrived}
-                  className="px-1.5 py-0.5 rounded-md bg-purple-100 text-purple-700 font-semibold hover:bg-purple-200 transition text-[10px]"
+                  className="flex-1 px-1.5 py-0.5 rounded-md bg-purple-100 text-purple-700 font-semibold hover:bg-purple-200 transition text-[10px]"
                 >
-                  ARRIVE?
+                  ARRIVE
                 </button>
-              )}
-
-              {isArrived && (
                 <button
-                  disabled
-                  className="px-1.5 py-0.5 rounded-md bg-green-200 text-green-700 font-bold cursor-default text-[10px]"
+                  onClick={handleOnTheWay}
+                  className="flex-1 px-1.5 py-0.5 rounded-md bg-blue-100 text-blue-700 font-semibold hover:bg-blue-200 transition text-[10px]"
                 >
-                  𝗔𝗥𝗥𝗜𝗩𝗘𝗗
+                  𝗦𝗧𝗜𝗟𝗟 𝗢𝗧𝗪
                 </button>
-              )}
+                <button
+                  onClick={handleDecline}
+                  className="flex-1 px-1.5 py-0.5 rounded-md bg-gray-100 text-gray-700 font-semibold hover:bg-gray-200 transition text-[10px]"
+                >
+                  CANCEL
+                </button>
+              </div>
+            )}
 
-              {isOnTheWay && (
+            {/* Step 3: After ARRIVED */}
+            {isArrived && (
+              <div className="flex gap-1 w-full">
                 <button
                   onClick={handleResponded}
-                  className="px-1.5 py-0.5 rounded-md bg-green-100 text-green-700 font-semibold hover:bg-green-200 transition text-[10px]"
+                  className="flex-1 px-1.5 py-0.5 rounded-md bg-green-100 text-green-700 font-semibold hover:bg-green-200 transition text-[10px]"
                 >
                   𝗥𝗘𝗦𝗣𝗢𝗡𝗗𝗘𝗗
                 </button>
-              )}
-
-              <button
-                onClick={handleDecline}
-                className="px-1.5 py-0.5 rounded-md bg-red-100 text-red-700 font-semibold hover:bg-red-200 transition text-[10px]"
-              >
-                𝗗𝗘𝗖𝗟𝗜𝗡𝗘
-              </button>
-            </div>
+                <button
+                  onClick={handleDecline}
+                  className="flex-1 px-1.5 py-0.5 rounded-md bg-gray-100 text-gray-700 font-semibold hover:bg-gray-200 transition text-[10px]"
+                >
+                  CANCEL
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </Popup>
     </Marker>
