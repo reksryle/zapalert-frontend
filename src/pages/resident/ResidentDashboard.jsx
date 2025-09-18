@@ -463,8 +463,13 @@ const ResidentDashboard = () => {
 
   const [showDropdown, setShowDropdown] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
-    const [currentReportId, setCurrentReportId] = useState(null);
+  const [currentReportId, setCurrentReportId] = useState(null);
   const [cancelledReports, setCancelledReports] = useState([]);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [showCancelReason, setShowCancelReason] = useState(false);
+  const [reportToCancel, setReportToCancel] = useState(null);
+  const [cancelReason, setCancelReason] = useState("");
+  const [selectedReason, setSelectedReason] = useState("");
 
   const networkStatus = useNetworkStatus();
   const wasOffline = useRef(false);
@@ -624,14 +629,19 @@ useEffect(() => {
 }, [notifications, hasNewNotif]);
 
 
-const handleCancelReport = async (reportId) => {
+const handleCancelReport = async (reportId, reason = "") => {
   try {
     setLoadingState("cancelling");
     
-    await axios.patch(`/reports/${reportId}/cancel`, {}, { withCredentials: true });
+    await axios.patch(`/reports/${reportId}/cancel`, { 
+      reason: reason || selectedReason || "No reason provided" 
+    }, { withCredentials: true });
     
     toast.success("Report cancelled successfully");
     setCancelledReports(prev => [...prev, reportId]);
+    setCurrentReportId(null);
+    setCancelReason("");
+    setSelectedReason("");
     
     // Play cancellation sound
     const cancelSound = new Audio("/sounds/cancelreport.mp3");
@@ -642,6 +652,7 @@ const handleCancelReport = async (reportId) => {
     toast.error("Failed to cancel report");
   } finally {
     setLoadingState(null);
+    setShowCancelReason(false);
   }
 };
 
@@ -954,10 +965,12 @@ return (
                 </p>
               </div>
               <button
-                onClick={() => handleCancelReport(currentReportId)}
+                onClick={() => {
+                  setReportToCancel(currentReportId);
+                  setShowCancelConfirm(true);
+                }}
                 className="px-6 py-3 rounded-2xl bg-gradient-to-r from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700 transition-all font-semibold shadow-lg hover:scale-105"
               >
-               
                 Cancel Request
               </button>
             </>
@@ -1033,6 +1046,150 @@ return (
           >
             Got it
           </button>
+        </div>
+      </div>
+    )}
+
+    {/* Cancel Confirmation Modal */}
+    {showCancelConfirm && (
+      <div
+        className="fixed inset-0 z-[6000] flex items-center justify-center bg-black/40 backdrop-blur-sm"
+        onClick={() => setShowCancelConfirm(false)}
+      >
+        <div
+          className="bg-gradient-to-br from-white via-red-50 to-orange-50 rounded-2xl shadow-xl w-80 max-w-full p-6 border-t-4 border-red-600"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <h2 className="text-center text-xl font-bold mb-4 text-gray-800">Cancel Report?</h2>
+          <p className="mb-6 text-center text-red-600 font-medium">
+            Are you sure you want to cancel this emergency report?
+          </p>
+          <div className="flex justify-center gap-4">
+            <button
+              className="px-5 py-2 rounded-xl text-white font-semibold transition-all bg-gradient-to-r from-red-500 via-red-600 to-red-700 hover:from-red-600 hover:to-red-800 shadow-md"
+              onClick={() => {
+                setShowCancelConfirm(false);
+                setShowCancelReason(true);
+              }}
+            >
+              Yes
+            </button>
+            <button
+              className="px-5 py-2 rounded-xl bg-gray-200 hover:bg-gray-300 transition-all font-semibold"
+              onClick={() => setShowCancelConfirm(false)}
+            >
+              No
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+    {/* Cancel Reason Modal */}
+    {showCancelReason && (
+      <div
+        className="fixed inset-0 z-[7000] flex items-center justify-center bg-black/40 backdrop-blur-sm"
+        onClick={() => {
+          setShowCancelReason(false);
+          setCancelReason("");
+          setSelectedReason("");
+        }}
+      >
+        <div
+          className="bg-gradient-to-br from-white via-red-50 to-orange-50 rounded-2xl shadow-xl w-80 max-w-full p-6 border-t-4 border-red-600"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <h2 className="text-center text-xl font-bold mb-4 text-gray-800">Reason for Cancellation</h2>
+
+          {/* Common Reasons */}
+          <div className="space-y-2 mb-4">
+            <label className="flex items-center space-x-2 p-2 rounded-lg hover:bg-red-50 cursor-pointer">
+              <input
+                type="radio"
+                name="cancelReason"
+                value="False alarm"
+                checked={selectedReason === "False alarm"}
+                onChange={(e) => setSelectedReason(e.target.value)}
+                className="text-red-600"
+              />
+              <span>False alarm</span>
+            </label>
+
+            <label className="flex items-center space-x-2 p-2 rounded-lg hover:bg-red-50 cursor-pointer">
+              <input
+                type="radio"
+                name="cancelReason"
+                value="Situation resolved"
+                checked={selectedReason === "Situation resolved"}
+                onChange={(e) => setSelectedReason(e.target.value)}
+                className="text-red-600"
+              />
+              <span>Situation resolved</span>
+            </label>
+
+            <label className="flex items-center space-x-2 p-2 rounded-lg hover:bg-red-50 cursor-pointer">
+              <input
+                type="radio"
+                name="cancelReason"
+                value="Wrong location"
+                checked={selectedReason === "Wrong location"}
+                onChange={(e) => setSelectedReason(e.target.value)}
+                className="text-red-600"
+              />
+              <span>Wrong location</span>
+            </label>
+
+            <label className="flex items-center space-x-2 p-2 rounded-lg hover:bg-red-50 cursor-pointer">
+              <input
+                type="radio"
+                name="cancelReason"
+                value="Other"
+                checked={selectedReason === "Other"}
+                onChange={(e) => setSelectedReason(e.target.value)}
+                className="text-red-600"
+              />
+              <span>Other reason</span>
+            </label>
+          </div>
+
+          {/* Other Reason Input */}
+          {selectedReason === "Other" && (
+            <div className="mb-4">
+              <textarea
+                placeholder="Please specify your reason..."
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                className="w-full border-2 border-red-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-400 bg-white/80 resize-none text-sm"
+                rows={3}
+              />
+            </div>
+          )}
+
+          <div className="flex justify-center gap-4">
+            <button
+              className="px-5 py-2 rounded-xl bg-gray-200 hover:bg-gray-300 transition-all font-semibold"
+              onClick={() => {
+                setShowCancelReason(false);
+                setCancelReason("");
+                setSelectedReason("");
+              }}
+            >
+              Back
+            </button>
+            <button
+              className="px-5 py-2 rounded-xl text-white font-semibold transition-all bg-gradient-to-r from-red-500 via-red-600 to-red-700 hover:from-red-600 hover:to-red-800 shadow-md disabled:opacity-50"
+              onClick={() => {
+                const finalReason = selectedReason === "Other" ? cancelReason : selectedReason;
+                if (!finalReason) {
+                  toast.error("Please provide a reason");
+                  return;
+                }
+                handleCancelReport(reportToCancel, finalReason);
+              }}
+              disabled={!selectedReason || (selectedReason === "Other" && !cancelReason)}
+            >
+              Confirm Cancel
+            </button>
+          </div>
         </div>
       </div>
     )}
