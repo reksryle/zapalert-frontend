@@ -310,7 +310,6 @@ const ReportsLog = () => {
         ))}
       </div>
 
-      {/* Details Modal */}
       {selectedReport && (
         <div
           className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
@@ -327,9 +326,9 @@ const ReportsLog = () => {
               ×
             </button>
             
-            <h2 className="text-2xl font-bold mb-6 text-gray-800">Report Details</h2>
+            <h2 className="text-2xl font-bold mb-4 text-gray-800">Report Details</h2>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm mb-4">
               <div className="space-y-2">
                 <p><strong>Full Name:</strong> {getFullName(selectedReport)}</p>
                 <p><strong>Username:</strong> {selectedReport.username || "N/A"}</p>
@@ -346,16 +345,26 @@ const ReportsLog = () => {
               </div>
             </div>
 
-            <div className="flex justify-center mb-6">
+            {/* Add cancellation reason display here */}
+            {selectedReport.status === 'cancelled' && selectedReport.cancellationReason && (
+              <div className="mb-4 p-3 bg-red-50 rounded-lg border border-red-200">
+                <p className="font-semibold text-red-800 mb-1 text-sm">Cancellation Reason:</p>
+                <p className="text-red-700 text-xs break-words whitespace-pre-wrap leading-relaxed">
+                  {selectedReport.cancellationReason}
+                </p>
+              </div>
+            )}
+
+            <div className="flex justify-center mb-4">
               <button
                 onClick={() => setShowActions(true)}
-                className="px-6 py-2 bg-gradient-to-r from-red-500 to-orange-500 text-white rounded-xl hover:from-red-600 hover:to-orange-600 transition-all shadow-lg"
+                className="px-5 py-1.5 bg-gradient-to-r from-red-500 to-orange-500 text-white rounded-xl hover:from-red-600 hover:to-orange-600 transition-all shadow-lg text-sm"
               >
                 View Responder Actions
               </button>
             </div>
 
-            <div className="h-64 w-full rounded-2xl overflow-hidden border-2 border-red-200 shadow-lg">
+            <div className="h-56 w-full rounded-xl overflow-hidden border-2 border-red-200">
               <MapContainer
                 center={[selectedReport.latitude, selectedReport.longitude]}
                 zoom={16}
