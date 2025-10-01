@@ -19,7 +19,10 @@ const soundMap = {
 };
 
 const HIDDEN_KEY = "responder-hidden-report-ids";
-const LATEST_KEY = "responder-latest-report-ids"; // ✅ new key for seen reports
+const LATEST_KEY = "responder-latest-report-ids";
+
+// 🔧 ADD THIS: Global flag to track if toast was shown for a report
+const globalShownReports = new Set();
 
 const useEmergencyReports = (enableToasts = false) => {
   const [reports, setReports] = useState([]);
@@ -108,10 +111,12 @@ const useEmergencyReports = (enableToasts = false) => {
 
       if (enableToasts) {
         newReports.forEach((r) => {
-          if (!latestIds.current.has(r._id)) {
+          // 🔧 MODIFIED: Check global set to prevent duplicate toasts
+          if (!latestIds.current.has(r._id) && !globalShownReports.has(r._id)) {
             toast.success(`📢 New ${r.type} report from ${r.firstName} ${r.lastName}`);
             playSoundForType(r.type);
-            latestIds.current.add(r._id); // ✅ mark seen immediately
+            latestIds.current.add(r._id);
+            globalShownReports.add(r._id); // 🔧 Add to global set
           }
         });
         persistLatest();
@@ -139,6 +144,14 @@ const useEmergencyReports = (enableToasts = false) => {
     fetchReports();
     const interval = setInterval(fetchReports, 5000);
     return () => clearInterval(interval);
+  }, []);
+
+  // 🔧 ADD THIS: Clean up global set when component unmounts (optional)
+  useEffect(() => {
+    return () => {
+      // Optional: Clear old entries periodically or keep them for session
+      // globalShownReports.clear();
+    };
   }, []);
 
   const declineReport = async (id) => {

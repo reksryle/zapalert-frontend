@@ -470,6 +470,7 @@ const ResidentDashboard = () => {
   const [reportToCancel, setReportToCancel] = useState(null);
   const [cancelReason, setCancelReason] = useState("");
   const [selectedReason, setSelectedReason] = useState("");
+  const [arrivedResponderName, setArrivedResponderName] = useState("");
 
   const networkStatus = useNetworkStatus();
   const wasOffline = useRef(false);
@@ -557,6 +558,9 @@ useEffect(() => {
       respondedAudioRef.current = new Audio("/sounds/responded.mp3");
       declinedAudioRef.current = new Audio("/sounds/declined.mp3");
       announcementAudioRef.current = new Audio("/sounds/announcement.mp3");
+      // Add arrived sound
+      const arrivedAudio = new Audio("/sounds/arrived.mp3");
+      arrivedAudio.load();
       audioInitialized.current = true;
     }
   };
@@ -607,6 +611,23 @@ useEffect(() => {
     setHasNewNotif(true);
   });
 
+  socket.on("arrived", (data) => {
+    setLoadingState("arrived");
+    // Extract first name from responderName
+    const firstName = data.responderName.split(' ')[0];
+    setArrivedResponderName(firstName);
+    
+    const message = `🔵 Responder ${data.responderName} has arrived at your location!`;
+    toast.success(message, { duration: 6000 });
+    
+    // Play arrived sound
+    const arrivedSound = new Audio("/sounds/arrived.mp3");
+    arrivedSound.play().catch(() => {});
+    
+    setNotifications(prev => [{ message, timestamp: new Date().toLocaleString() }, ...prev]);
+    setHasNewNotif(true);
+  });
+
   socket.on("public-announcement", (data) => {
     showAnnouncementToast(data.message, () => {
       announcementAudioRef.current.pause();
@@ -653,6 +674,16 @@ const handleCancelReport = async (reportId, reason = "") => {
   } finally {
     setLoadingState(null);
     setShowCancelReason(false);
+  }
+};
+
+const handleFollowUp = async (reportId) => {
+  try {
+    await axios.patch(`/reports/${reportId}/followup`, {}, { withCredentials: true });
+    toast.success("Follow-up request sent to responders");
+  } catch (err) {
+    console.error("Failed to send follow-up:", err);
+    toast.error("Failed to send follow-up request");
   }
 };
 
@@ -860,78 +891,78 @@ return (
 
       {/* Emergency Form Section */}
       <div className="flex-1 overflow-y-auto">
-  <EmergencyForm 
-    location={location} 
-    setLocation={setLocation} 
-    user={user} 
-    networkStatus={networkStatus} 
-    setZapStatus={setZapStatus}
-    setLoadingState={setLoadingState}
-    resetFirstResponder={resetFirstResponder}
-    setCurrentReportId={setCurrentReportId}
-  />
-      </div>
-    </div>
-
-    {/* Notification Bell */}
-    <div className="fixed top-4 right-4 z-[1500]">
-      <div className="relative inline-block">
-        <button
-          type="button"
-          className="relative bg-white/20 backdrop-blur-lg p-3 rounded-2xl shadow-2xl border border-white/30 hover:bg-white/30 transition-all duration-300 hover:scale-110"
-          onClick={() => {
-            setShowDropdown((prev) => !prev);
-            setHasNewNotif(false);
-            localStorage.setItem("resident-hasNew", JSON.stringify(false));
-          }}
-          aria-label="View notifications"
-        >
-          <Bell className="h-5 w-5 text-white" />
-          {hasNewNotif && notifications.length > 0 && (
-            <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-gradient-to-r from-orange-400 to-red-500 border-2 border-white animate-pulse shadow-lg"></span>
-          )}
-        </button>
-        
-        {showDropdown && (
-          <div className="absolute right-0 mt-2 w-72 bg-white/95 backdrop-blur-xl shadow-2xl border border-red-200 rounded-2xl z-[200] overflow-hidden max-h-96">
-            <div className="p-3 font-bold border-b border-red-100 text-gray-800 bg-gradient-to-r from-red-50 to-orange-50 text-sm">
-              🔔 Notifications 
-            </div>
-            <ul className="max-h-64 overflow-y-auto">
-              {notifications.length === 0 ? (
-                <li className="p-4 text-gray-500 text-center text-sm">
-                  <div className="text-2xl mb-1">📭</div>
-                  No notifications yet
-                </li>
-              ) : (
-                notifications.map((notification, index) => (
-                  <li 
-                    key={index} 
-                    className="p-3 border-b border-red-50 text-xs text-gray-800 hover:bg-red-25 transition-colors"
-                  >
-                    <div className="font-medium">{notification.message}</div>
-                    <div className="text-xs text-gray-500 mt-1 flex items-center">
-                      🕐 {notification.timestamp}
-                    </div>
-                  </li>
-                ))
-              )}
-            </ul>
-            <button
-              onClick={() => {
-                setNotifications([]);
-                localStorage.removeItem("resident-notifications");
-                localStorage.removeItem("resident-hasNew");
-                setHasNewNotif(false);
-              }}
-              className="w-full text-center py-3 text-xs text-red-600 hover:bg-gradient-to-r hover:from-red-50 hover:to-orange-50 rounded-b-2xl transition-all font-semibold"
-            >
-              Clear All Notifications
-            </button>
+      <EmergencyForm 
+        location={location} 
+        setLocation={setLocation} 
+        user={user} 
+        networkStatus={networkStatus} 
+        setZapStatus={setZapStatus}
+        setLoadingState={setLoadingState}
+        resetFirstResponder={resetFirstResponder}
+        setCurrentReportId={setCurrentReportId}
+      />
           </div>
-        )}
-      </div>
-    </div>
+        </div>
+
+        {/* Notification Bell */}
+        <div className="fixed top-4 right-4 z-[1500]">
+          <div className="relative inline-block">
+            <button
+              type="button"
+              className="relative bg-white/20 backdrop-blur-lg p-3 rounded-2xl shadow-2xl border border-white/30 hover:bg-white/30 transition-all duration-300 hover:scale-110"
+              onClick={() => {
+                setShowDropdown((prev) => !prev);
+                setHasNewNotif(false);
+                localStorage.setItem("resident-hasNew", JSON.stringify(false));
+              }}
+              aria-label="View notifications"
+            >
+              <Bell className="h-5 w-5 text-white" />
+              {hasNewNotif && notifications.length > 0 && (
+                <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-gradient-to-r from-orange-400 to-red-500 border-2 border-white animate-pulse shadow-lg"></span>
+              )}
+            </button>
+            
+            {showDropdown && (
+              <div className="absolute right-0 mt-2 w-72 bg-white/95 backdrop-blur-xl shadow-2xl border border-red-200 rounded-2xl z-[200] overflow-hidden max-h-96">
+                <div className="p-3 font-bold border-b border-red-100 text-gray-800 bg-gradient-to-r from-red-50 to-orange-50 text-sm">
+                  🔔 Notifications 
+                </div>
+                <ul className="max-h-64 overflow-y-auto">
+                  {notifications.length === 0 ? (
+                    <li className="p-4 text-gray-500 text-center text-sm">
+                      <div className="text-2xl mb-1">📭</div>
+                      No notifications yet
+                    </li>
+                  ) : (
+                    notifications.map((notification, index) => (
+                      <li 
+                        key={index} 
+                        className="p-3 border-b border-red-50 text-xs text-gray-800 hover:bg-red-25 transition-colors"
+                      >
+                        <div className="font-medium">{notification.message}</div>
+                        <div className="text-xs text-gray-500 mt-1 flex items-center">
+                          🕐 {notification.timestamp}
+                        </div>
+                      </li>
+                    ))
+                  )}
+                </ul>
+                <button
+                  onClick={() => {
+                    setNotifications([]);
+                    localStorage.removeItem("resident-notifications");
+                    localStorage.removeItem("resident-hasNew");
+                    setHasNewNotif(false);
+                  }}
+                  className="w-full text-center py-3 text-xs text-red-600 hover:bg-gradient-to-r hover:from-red-50 hover:to-orange-50 rounded-b-2xl transition-all font-semibold"
+                >
+                  Clear All Notifications
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
 
     {/* Loading/Status Overlay */}
     {loadingState && (
@@ -986,14 +1017,46 @@ return (
                   Emergency responder is heading to your location.
                 </p>
               </div>
-              <button
-                onClick={() => setLoadingState(null)}
-                className="px-6 py-3 rounded-2xl bg-gradient-to-r from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700 transition-all font-semibold shadow-lg hover:scale-105"
-              >
-                Close
-              </button>
+              <div className="flex flex-col gap-3 w-full">
+                <button
+                  onClick={() => {
+                    setReportToCancel(currentReportId);
+                    setShowCancelConfirm(true);
+                  }}
+                  className="px-6 py-3 rounded-2xl bg-gradient-to-r from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700 transition-all font-semibold shadow-lg hover:scale-105"
+                >
+                  Cancel Request
+                </button>
+                <button
+                  onClick={() => handleFollowUp(currentReportId)}
+                  className="px-6 py-3 rounded-2xl bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 transition-all font-semibold shadow-lg hover:scale-105"
+                >
+                  Follow Up
+                </button>
+              </div>
             </>
           )}
+
+          {/* ARRIVED lah */}
+{loadingState === "arrived" && (
+  <>
+    <div className="text-6xl animate-bounce">🙋🏾</div>
+    <div>
+      <p className="text-xl font-bold text-purple-600">
+        Responder {arrivedResponderName} Has Arrived!
+      </p>
+      <p className="text-gray-600 text-sm mt-2">
+        The emergency responder has arrived at your location.
+      </p>
+    </div>
+    <button
+      onClick={() => setLoadingState(null)}
+      className="px-6 py-3 rounded-2xl bg-gradient-to-r from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700 transition-all font-semibold shadow-lg hover:scale-105"
+    >
+      Close
+    </button>
+  </>
+)}
 
           {/* RESPONDED */}
           {loadingState === "responded" && (

@@ -609,25 +609,25 @@ const EmergencyList = ({ onTheWayIds, setOnTheWayIds, arrivedIds, setArrivedIds,
     } else savePending(id, "responded", `${report.type} Report`);
   };
 
-  const handleDecline = (id, report) => {
-    if (navigator.onLine) {
-      declineReport(id);
-      // Remove from onTheWayIds if it was there
-      if (onTheWayIds.includes(id)) {
-        const updatedOnTheWayIds = onTheWayIds.filter(reportId => reportId !== id);
-        setOnTheWayIds(updatedOnTheWayIds);
-        localStorage.setItem("onTheWayIds", JSON.stringify(updatedOnTheWayIds));
-      }
-    } else {
-      savePending(id, "declined", `${report.type} Report`);
-      // Remove from onTheWayIds if it was there
-      if (onTheWayIds.includes(id)) {
-        const updatedOnTheWayIds = onTheWayIds.filter(reportId => reportId !== id);
-        setOnTheWayIds(updatedOnTheWayIds);
-        localStorage.setItem("onTheWayIds", JSON.stringify(updatedOnTheWayIds));
-      }
+const handleDecline = (id, report) => {
+  if (navigator.onLine) {
+    declineReport(id);
+    // Remove from onTheWayIds if it was there
+    if (onTheWayIds.includes(id)) {
+      const updatedOnTheWayIds = onTheWayIds.filter(reportId => reportId !== id);
+      setOnTheWayIds(updatedOnTheWayIds);
+      localStorage.setItem("onTheWayIds", JSON.stringify(updatedOnTheWayIds));
     }
-  };
+  } else {
+    savePending(id, "declined", `${report.type} Report`);
+    // Remove from onTheWayIds if it was there
+    if (onTheWayIds.includes(id)) {
+      const updatedOnTheWayIds = onTheWayIds.filter(reportId => reportId !== id);
+      setOnTheWayIds(updatedOnTheWayIds);
+      localStorage.setItem("onTheWayIds", JSON.stringify(updatedOnTheWayIds));
+    }
+  }
+};
 
   const handleArrived = async (id, report) => {
     if (navigator.onLine) {
@@ -668,7 +668,7 @@ const EmergencyList = ({ onTheWayIds, setOnTheWayIds, arrivedIds, setArrivedIds,
             {respondingCount}
           </div>
           
-          {/* ACTIVE indicator - changes opacity based on count */}
+          {/* ACTIVE indicator - changes opacity based on count lah */}
           <div className={`px-2 sm:px-3 py-1 bg-blue-500 text-white text-xs font-bold rounded-full ${activeReportsCount === 0 ? 'opacity-40' : ''}`}>
             <span className="text-[10px] mr-1">ACTIVE:</span>
             {activeReportsCount}
@@ -763,14 +763,28 @@ const MapView = ({
     }
   }, []);
 
-  // REMOVED the auto-centering useEffect
+  // Format time function for emergencies
+  const formatPHTime = (isoString) =>
+    new Date(isoString).toLocaleString("en-PH", {
+      timeZone: "Asia/Manila",
+      year: "numeric",
+      month: "short",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+
+  // Get recent emergencies (non-cancelled, limit to 3)
+  const recentEmergencies = reports
+    .filter(report => report.status !== "cancelled")
+    .slice(0, 3);
 
   return (
     <div className="bg-white rounded-2xl shadow-lg overflow-hidden flex flex-col relative z-10">
       {/* Map Section */}
       <div className="flex items-center justify-center p-4 sm:p-6 border-b border-gray-100">
         <h3 className="text-lg sm:text-xl font-bold text-gray-900">Emergency Map</h3>
-
       </div>
 
       <div className="h-[300px] sm:h-[400px] relative">
@@ -821,19 +835,43 @@ const MapView = ({
           </div>
         </div>
       </div>
-      {/* Recent Notifications Section */}
+      
+      {/* Recent Emergencies Section - CHANGED FROM "Recent Notifications" */}
       <div className="border-t border-gray-200 bg-gray-50">
         <div className="p-4 sm:p-5 flex items-center justify-between">
-          <h4 className="font-bold text-gray-900 text-sm sm:text-base">Recent Notifications</h4>
+          <h4 className="font-bold text-gray-900 text-sm sm:text-base">Recent Emergencies</h4>
         </div>
         <div className="max-h-60 overflow-y-auto px-6 pb-4 space-y-3">
-          {responderNotifications.length === 0 ? (
-            <p className="text-gray-500 text-xs sm:text-sm">No notifications</p>
+          {recentEmergencies.length === 0 ? (
+            <p className="text-gray-500 text-xs sm:text-sm">No active emergencies</p>
           ) : (
-            responderNotifications.slice(0, 3).map((note, idx) => (
-              <div key={idx} className="bg-white p-3 rounded-xl shadow border border-gray-100">
-                <div className="text-gray-800 text-sm sm:text-base font-medium">{note.message}</div>
-                <div className="text-xs text-gray-500 mt-1">{note.timestamp}</div>
+            recentEmergencies.map((report) => (
+              <div key={report._id} className="bg-white p-3 rounded-xl shadow border border-gray-100">
+                <div className="flex items-start justify-between mb-2">
+                  <div className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                    report.type === 'Fire' ? 'bg-red-500 text-white' :
+                    report.type === 'Medical' ? 'bg-blue-500 text-white' :
+                    report.type === 'Crime' ? 'bg-orange-500 text-white' :
+                    report.type === 'Flood' ? 'bg-cyan-500 text-white' :
+                    'bg-gray-500 text-white'
+                  }`}>
+                    {report.type}
+                  </div>
+                  <div className="text-xs text-gray-500 ml-2 whitespace-nowrap">
+                    {formatPHTime(report.createdAt)}
+                  </div>
+                </div>
+                <div className="text-gray-800 text-sm font-medium mb-1">
+                  {report.firstName} {report.lastName}
+                </div>
+                <p className="text-xs text-gray-600 truncate">
+                  {report.description || "No description provided"}
+                </p>
+                {onTheWayIds.includes(report._id) && (
+                  <div className="mt-2 px-2 py-1 bg-yellow-400 text-yellow-900 text-xs font-semibold rounded-full animate-pulse inline-block">
+                    RESPONDING
+                  </div>
+                )}
               </div>
             ))
           )}
@@ -1029,35 +1067,69 @@ const ResponderDashboard = () => {
       pushNotif(data, "🔵 [responder] has arrived at the [type] report of [resident]", "/sounds/imhere.mp3")
     );
 
-    // Add this to the socket event listeners in ResponderDashboard.jsx
-    responderSocket.on("report-cancelled", (data) => {
-      const message = `🔴 Report for ${data.type} has been cancelled by Resident ${data.residentName}`;
+    responderSocket.on("resident-followup", (data) => {
+      const message = `Resident ${data.residentName} requested follow-up for ${data.type} report`;
+      
+      // Play follow-up sound based on emergency type
+      const followupSound = new Audio(`/sounds/followup${data.type.toLowerCase()}.mp3`);
+      followupSound.play().catch(() => {});
       
       // Show toast notification
       toast(message, { 
         duration: 6000,
-        icon: "❌",
+        icon: "🔔",
         style: {
-          background: '#fee2e2',
-          border: '1px solid #fecaca',
-          color: '#b91c1c'
+          background: '#dbeafe',
+          border: '1px solid #93c5fd',
+          color: '#1e40af'
         }
       });
-      
-      // Play cancellation sound
-      const cancelSound = new Audio("/sounds/cancel.mp3");
-      cancelSound.play().catch(() => {});
       
       // Add to notifications list
       const newNotif = {
         message,
         timestamp: new Date().toLocaleString(),
-        id: `cancelled-${Date.now()}`
+        id: `followup-${Date.now()}`
       };
       
       setResponderNotifications((prev) => [newNotif, ...prev]);
       setHasNewNotif(true);
     });
+
+  // Also update the report-cancelled handler to handle the activeResponders logic:
+  responderSocket.on("report-cancelled", (data) => {
+    const message = `Report for ${data.type} has been cancelled by Resident ${data.residentName}`;
+    
+    // Show toast notification
+    toast(message, { 
+      duration: 6000,
+      icon: "❌",
+      style: {
+        background: '#fee2e2',
+        border: '1px solid #fecaca',
+        color: '#b91c1c'
+      }
+    });
+    
+    // Play cancellation sound
+    const cancelSound = new Audio("/sounds/cancel.mp3");
+    cancelSound.play().catch(() => {});
+    
+    // Add to notifications list
+    const newNotif = {
+      message,
+      timestamp: new Date().toLocaleString(),
+      id: `cancelled-${Date.now()}`
+    };
+    
+    setResponderNotifications((prev) => [newNotif, ...prev]);
+    setHasNewNotif(true);
+    
+    // If this responder had this report in onTheWayIds and there's only one responder, remove it
+    if (data.activeResponders <= 1) {
+      setOnTheWayIds(prev => prev.filter(id => id !== data.reportId));
+    }
+  });
 
     return () => responderSocket.disconnect();
   }, [loading, username]);
@@ -1288,47 +1360,47 @@ const ResponderDashboard = () => {
       </div>
 
       {/* ---------------- Tutorial Popup ---------------- */}
-{showTutorial && (
-  <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-40">
-    <div className="bg-white/90 backdrop-blur-md rounded-3xl max-w-sm w-full p-6 space-y-5 text-gray-800 relative shadow-2xl transform scale-95 animate-popupIn border border-white/30">
-      
-      {/* Accent bar */}
-      <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-2 w-16 h-1 rounded-full bg-red-600 shadow-md"></div>
+        {showTutorial && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-40">
+            <div className="bg-white/90 backdrop-blur-md rounded-3xl max-w-sm w-full p-6 space-y-5 text-gray-800 relative shadow-2xl transform scale-95 animate-popupIn border border-white/30">
+              
+              {/* Accent bar */}
+              <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-2 w-16 h-1 rounded-full bg-red-600 shadow-md"></div>
 
-      {/* Title */}
-      <h3 className="text-2xl font-extrabold text-red-700 text-center">
-        Enable Location
-      </h3>
+              {/* Title */}
+              <h3 className="text-2xl font-extrabold text-red-700 text-center">
+                Enable Location
+              </h3>
 
-      {/* Description */}
-      <p className="text-sm text-gray-700 text-center leading-relaxed">
-        To use ZapAlert effectively, please turn on your device's location so emergencies can be handled quickly.
-      </p>
+              {/* Description */}
+              <p className="text-sm text-gray-700 text-center leading-relaxed">
+                To use ZapAlert effectively, please turn on your device's location so emergencies can be handled quickly.
+              </p>
 
-      {/* Image / GIF */}
-      <img
-        src="/tutorial/turnlocation.gif"
-        alt="Enable Location"
-        className="w-full rounded-xl shadow-lg border border-gray-200"
-      />
+              {/* Image / GIF */}
+              <img
+                src="/tutorial/turnlocation.gif"
+                alt="Enable Location"
+                className="w-full rounded-xl shadow-lg border border-gray-200"
+              />
 
-      {/* Button */}
-      <button
-        onClick={() => {
-          setShowTutorial(false);
-          // Add a smooth exit animation
-          const tutorialElement = document.querySelector('.animate-popupIn');
-          if (tutorialElement) {
-            tutorialElement.style.animation = 'popupOut 0.3s ease-in forwards';
-          }
-        }}
-        className="w-full py-3 bg-gradient-to-r from-red-600 via-red-500 to-orange-400 text-white font-bold rounded-xl shadow-lg hover:scale-105 hover:shadow-xl transition transform duration-300"
-      >
-        Got it
-      </button>
-    </div>
-  </div>
-)}
+              {/* Button */}
+              <button
+                onClick={() => {
+                  setShowTutorial(false);
+                  // Add a smooth exit animation
+                  const tutorialElement = document.querySelector('.animate-popupIn');
+                  if (tutorialElement) {
+                    tutorialElement.style.animation = 'popupOut 0.3s ease-in forwards';
+                  }
+                }}
+                className="w-full py-3 bg-gradient-to-r from-red-600 via-red-500 to-orange-400 text-white font-bold rounded-xl shadow-lg hover:scale-105 hover:shadow-xl transition transform duration-300"
+              >
+                Got it
+              </button>
+            </div>
+          </div>
+        )}
     </div>
   );
 };
