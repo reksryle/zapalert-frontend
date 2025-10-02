@@ -200,26 +200,30 @@ const ReportsLog = () => {
     <div className="bg-gradient-to-br from-white via-red-50 to-orange-50 rounded-2xl shadow-lg p-6">
       <h1 className="text-3xl font-bold mb-6 text-gray-800">Reports Log</h1>
 
-      {/* Filters - Add cancelled filter */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-        {["all", "pending", "on the way", "resolved", "cancelled"].map((status) => (
-          <button
-            key={status}
-            onClick={() => setStatusFilter(status)}
-            className={`px-4 py-2 rounded-xl border-2 transition-all ${
-              statusFilter === status
-                ? "bg-gradient-to-r from-red-500 to-orange-500 text-white border-transparent shadow-lg"
-                : "bg-white/80 border-red-200 text-gray-700 hover:bg-red-50 hover:border-red-300"
-            }`}
-          >
-            {status === "all" ? "All" : status.replace("_", " ").toUpperCase()}
-          </button>
-        ))}
+      {/* Filters - All in one row */}
+      <div className="flex flex-wrap gap-3 mb-6 items-center">
+        {/* Status Filter Buttons */}
+        <div className="flex flex-wrap gap-2">
+          {["all", "pending", "on the way", "resolved", "cancelled"].map((status) => (
+            <button
+              key={status}
+              onClick={() => setStatusFilter(status)}
+              className={`px-3 py-2 rounded-xl border-2 transition-all text-sm font-medium whitespace-nowrap ${
+                statusFilter === status
+                  ? "bg-gradient-to-r from-red-500 to-orange-500 text-white border-transparent shadow-lg"
+                  : "bg-white/80 border-red-200 text-gray-700 hover:bg-red-50 hover:border-red-300"
+              }`}
+            >
+              {status === "all" ? "All" : status.charAt(0).toUpperCase() + status.slice(1)}
+            </button>
+          ))}
+        </div>
 
+        {/* Date Filter */}
         <select
           value={dateFilter}
           onChange={(e) => setDateFilter(e.target.value)}
-          className="p-3 border-2 border-red-200 rounded-xl bg-white/80 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-400"
+          className="p-2 border-2 border-red-200 rounded-xl bg-white/80 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-400 text-sm min-w-[140px]"
         >
           <option value="latest">Latest</option>
           <option value="oldest">Oldest</option>
@@ -229,26 +233,29 @@ const ReportsLog = () => {
           <option value="specific">Choose Date</option>
         </select>
         
+        {/* Specific Date Input */}
         {dateFilter === "specific" && (
           <input
             type="date"
             value={specificDate}
             onChange={(e) => setSpecificDate(e.target.value)}
-            className="p-3 border-2 border-red-200 rounded-xl bg-white/80 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-400"
+            className="p-2 border-2 border-red-200 rounded-xl bg-white/80 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-400 text-sm min-w-[140px]"
           />
         )}
 
+        {/* Search Input */}
         <input
           type="text"
           placeholder="Search reports..."
           value={searchKeyword}
           onChange={(e) => setSearchKeyword(e.target.value)}
-          className="p-3 border-2 border-red-200 rounded-xl bg-white/80 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-400"
+          className="p-2 border-2 border-red-200 rounded-xl bg-white/80 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-400 text-sm min-w-[180px] flex-1"
         />
         
+        {/* Export Button */}
         <button
           onClick={handleExportCSV}
-          className="px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 transition-all shadow-lg"
+          className="px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 transition-all shadow-lg text-sm font-medium whitespace-nowrap"
         >
           Export Sheets
         </button>

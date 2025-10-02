@@ -240,22 +240,30 @@ const Signup = () => {
         <div className="space-y-4">
           {/* First / Last Name */}
           <div className="grid grid-cols-2 gap-4">
-            <input
-              type="text"
-              name="firstName"
-              placeholder="First Name"
-              value={form.firstName}
-              onChange={handleChange}
-              className="w-full px-4 py-3 font-medium text-gray-900 bg-white/80 backdrop-blur-sm border-2 border-red-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-300 focus:border-red-400 transition-all"
-            />
-            <input
-              type="text"
-              name="lastName"
-              placeholder="Last Name"
-              value={form.lastName}
-              onChange={handleChange}
-              className="w-full px-4 py-3 font-medium text-gray-900 bg-white/80 backdrop-blur-sm border-2 border-red-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-300 focus:border-red-400 transition-all"
-            />
+          <input
+            type="text"
+            name="firstName"
+            placeholder="First Name"
+            value={form.firstName}
+            onChange={(e) => {
+              if (/^[a-zA-Z\s]*$/.test(e.target.value)) {
+                handleChange(e);
+              }
+            }}
+            className="w-full px-4 py-3 font-medium text-gray-900 bg-white/80 backdrop-blur-sm border-2 border-red-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-300 focus:border-red-400 transition-all"
+          />
+          <input
+            type="text"
+            name="lastName"
+            placeholder="Last Name"
+            value={form.lastName}
+            onChange={(e) => {
+              if (/^[a-zA-Z\s]*$/.test(e.target.value)) {
+                handleChange(e);
+              }
+            }}
+            className="w-full px-4 py-3 font-medium text-gray-900 bg-white/80 backdrop-blur-sm border-2 border-red-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-300 focus:border-red-400 transition-all"
+          />
           </div>
 
           {/* Age */}

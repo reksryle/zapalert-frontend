@@ -14,8 +14,12 @@ const AllUsers = () => {
   const [barangayFilter, setBarangayFilter] = useState("All");
   const [barrioFilter, setBarrioFilter] = useState("All");
   const [searchUsername, setSearchUsername] = useState("");
-  const [deleteConfirmInput, setDeleteConfirmInput] = useState("");
   const [selectedTab, setSelectedTab] = useState("Profile");
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [userToDelete, setUserToDelete] = useState(null);
+  const [adminPassword, setAdminPassword] = useState("");
+  const [showDeletedModal, setShowDeletedModal] = useState(false);
+  const [deletedAccounts, setDeletedAccounts] = useState([]);
 
   const fetchAllUsers = async () => {
     try {
@@ -26,6 +30,54 @@ const AllUsers = () => {
       console.error("Error fetching all users:", err);
     }
   };
+
+  // Load deleted accounts from localStorage
+  useEffect(() => {
+    const savedDeletedAccounts = localStorage.getItem('deletedAccounts');
+    if (savedDeletedAccounts) {
+      setDeletedAccounts(JSON.parse(savedDeletedAccounts));
+    }
+  }, []);
+
+  // Save deleted account when user is deleted
+  const saveDeletedAccount = (user) => {
+    const deletedAccount = {
+      ...user,
+      deletedAt: new Date().toISOString(),
+      deletedDate: new Date().toLocaleString('en-PH', {
+        timeZone: 'Asia/Manila',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      })
+    };
+    
+    const updatedDeletedAccounts = [deletedAccount, ...deletedAccounts];
+    setDeletedAccounts(updatedDeletedAccounts);
+    localStorage.setItem('deletedAccounts', JSON.stringify(updatedDeletedAccounts));
+  };
+
+  // Auto-clean deleted accounts older than 15 days
+  useEffect(() => {
+    const cleanOldDeletedAccounts = () => {
+      const fifteenDaysAgo = new Date();
+      fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15);
+      
+      const filteredAccounts = deletedAccounts.filter(account => {
+        const deletedDate = new Date(account.deletedAt);
+        return deletedDate > fifteenDaysAgo;
+      });
+      
+      if (filteredAccounts.length !== deletedAccounts.length) {
+        setDeletedAccounts(filteredAccounts);
+        localStorage.setItem('deletedAccounts', JSON.stringify(filteredAccounts));
+      }
+    };
+
+    cleanOldDeletedAccounts();
+  }, [deletedAccounts]);
 
   useEffect(() => {
     fetchAllUsers();
@@ -90,23 +142,51 @@ const AllUsers = () => {
     }
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async () => {
+    if (!adminPassword) {
+      toast.error("Please enter your admin password.");
+      return;
+    }
+
     try {
-      await axios.delete(`${BASE_URL}/auth/reject/${id}`, { withCredentials: true });
+      // CHANGE THIS LINE: Use the new delete endpoint
+      await axios.delete(`${BASE_URL}/auth/delete/${userToDelete._id}`, { 
+        data: { adminPassword },
+        withCredentials: true 
+      });
+      
+      // Save to deleted accounts
+      saveDeletedAccount(userToDelete);
+      
       fetchAllUsers();
       setSelectedUser(null);
+      setShowDeleteModal(false);
+      setAdminPassword("");
       toast.success("User deleted successfully.");
     } catch (error) {
-      toast.error("Failed to delete user.");
+      toast.error(error.response?.data?.message || "Failed to delete user.");
     }
   };
 
-  const barangayOptions = [...new Set(allUsers.map((u) => u.barangay))];
-  const barrioOptions = [...new Set(allUsers.map((u) => u.barrio).filter(Boolean))].sort();
+    const barangayOptions = [...new Set(allUsers.map((u) => u.barangay))];
+    const barrioOptions = [...new Set(allUsers.map((u) => u.barrio).filter(Boolean))].sort();
 
-  return (
-    <div className="bg-gradient-to-br from-white via-red-50 to-orange-50 rounded-2xl shadow-lg p-6">
-      <h1 className="text-2xl font-bold mb-6 text-gray-800">All Registered Users</h1>
+    return (
+      <div className="bg-gradient-to-br from-white via-red-50 to-orange-50 rounded-2xl shadow-lg p-6">
+  <div className="flex justify-between items-center mb-6">
+    <h1 className="text-2xl font-bold text-gray-800">All Registered Users</h1>
+    
+    {/* View Deleted Accounts Button */}
+    <button
+      onClick={() => setShowDeletedModal(true)}
+      className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-gray-600 to-gray-700 text-white rounded-xl hover:from-gray-700 hover:to-gray-800 transition-all shadow-lg font-semibold text-sm"
+    >
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+      </svg>
+      Deleted Accounts ({deletedAccounts.length})
+    </button>
+  </div>
 
       {/* Filters */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
@@ -190,9 +270,10 @@ const AllUsers = () => {
                   onClick={() => {
                     setSelectedUser(user);
                     setSelectedTab("Profile");
-                    setDeleteConfirmInput("");
+                    setAdminPassword("");
+                    setShowDeleteModal(false);
                   }}
-                >
+                  >
                   <td className="py-3 px-4 font-medium">{user.firstName} {user.lastName}</td>
                   <td className="py-3 px-4">{user.username}</td>
                   <td className="py-3 px-4">
@@ -297,35 +378,175 @@ const AllUsers = () => {
                   </div>
                 )}
                 {selectedUser.status === "approved" && (
-                  <>
-                    <p className="text-sm text-gray-600 text-center">
-                      Type <strong>delete {selectedUser.username}</strong> to confirm:
-                    </p>
-                    <input
-                      type="text"
-                      value={deleteConfirmInput}
-                      onChange={(e) => setDeleteConfirmInput(e.target.value)}
-                      placeholder="Enter confirmation"
-                      className="w-full p-3 border-2 border-red-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-400"
-                    />
+                  <div className="mt-6 space-y-4">
+                    <div className="text-center p-4 bg-red-50 rounded-xl border border-red-200">
+                      <p className="text-red-700 font-semibold mb-2">Danger Zone</p>
+                      <p className="text-sm text-gray-600">
+                        This action cannot be undone. The user will be permanently deleted.
+                      </p>
+                    </div>
+                    
                     <button
-                      className={`w-full py-3 px-4 rounded-xl text-white font-semibold transition-all shadow-lg ${
-                        deleteConfirmInput === `delete ${selectedUser.username}`
-                          ? "bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800"
-                          : "bg-gray-400 cursor-not-allowed"
-                      }`}
-                      onClick={() => handleDelete(selectedUser._id)}
-                      disabled={deleteConfirmInput !== `delete ${selectedUser.username}`}
+                      className="w-full py-3 px-4 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-xl hover:from-red-700 hover:to-red-800 transition-all shadow-lg font-semibold"
+                      onClick={() => {
+                        setUserToDelete(selectedUser);
+                        setShowDeleteModal(true);
+                        setAdminPassword(""); // Clear previous password
+                      }}
                     >
                       Delete User
                     </button>
-                  </>
+                  </div>
                 )}
               </div>
             )}
           </div>
         </div>
       )}
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && userToDelete && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-[60]">
+          <div className="bg-gradient-to-br from-white via-red-50 to-orange-50 rounded-2xl p-6 w-full max-w-md mx-4 relative shadow-2xl border border-red-200">
+            <button 
+              className="absolute top-4 right-4 text-2xl text-red-600 hover:text-red-800 transition-colors"
+              onClick={() => {
+                setShowDeleteModal(false);
+                setAdminPassword("");
+              }}
+            >
+              ×
+            </button>
+
+            <h2 className="text-xl font-bold mb-4 text-gray-800">Confirm Deletion</h2>
+            
+            <div className="mb-4 p-4 bg-red-50 rounded-xl border border-red-200">
+              <p className="text-red-700 font-semibold">You are about to delete:</p>
+              <p className="text-gray-800 text-lg font-medium">{userToDelete.firstName} {userToDelete.lastName}</p>
+              <p className="text-gray-600">Username: {userToDelete.username}</p>
+              <p className="text-gray-600">Role: {userToDelete.role}</p>
+            </div>
+
+            <div className="space-y-4">
+              <p className="text-sm text-gray-600">
+                Enter your <strong>password</strong> to confirm deletion:
+              </p>
+              
+              <input
+                type="password"
+                value={adminPassword}
+                onChange={(e) => setAdminPassword(e.target.value)}
+                placeholder="Enter your admin password"
+                className="w-full p-3 border-2 border-red-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-400"
+              />
+
+              <div className="flex gap-3">
+                <button
+                  className="flex-1 py-3 bg-gray-400 text-white rounded-xl hover:bg-gray-500 transition-all font-semibold"
+                  onClick={() => {
+                    setShowDeleteModal(false);
+                    setAdminPassword("");
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  className={`flex-1 py-3 rounded-xl text-white font-semibold transition-all ${
+                    adminPassword
+                      ? "bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800"
+                      : "bg-gray-400 cursor-not-allowed"
+                  }`}
+                  onClick={handleDelete}
+                  disabled={!adminPassword}
+                >
+                  Delete User
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Deleted Accounts Modal */}
+      {showDeletedModal && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-[70]">
+          <div className="bg-gradient-to-br from-white via-red-50 to-orange-50 rounded-2xl p-6 w-full max-w-4xl mx-4 max-h-[80vh] overflow-y-auto relative shadow-2xl border border-red-200">
+            <button 
+              className="absolute top-4 right-4 text-2xl text-red-600 hover:text-red-800 transition-colors"
+              onClick={() => setShowDeletedModal(false)}
+            >
+              ×
+            </button>
+
+            <h2 className="text-xl font-bold mb-4 text-gray-800">Recently Deleted Accounts</h2>
+            
+            {/* Info Note */}
+            <div className="mb-4 p-4 bg-yellow-50 rounded-xl border border-yellow-200">
+              <p className="text-yellow-700 text-sm">
+                <strong>Note:</strong> Deleted accounts are automatically cleared after 15 days.
+              </p>
+            </div>
+
+            {deletedAccounts.length === 0 ? (
+              <div className="text-center py-12 bg-white/80 rounded-2xl shadow-inner">
+                <p className="text-gray-600 text-lg">No deleted accounts found.</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto rounded-2xl shadow-lg bg-white/80 backdrop-blur-sm">
+                <table className="min-w-full text-left">
+                  <thead className="bg-gradient-to-r from-gray-600 to-gray-700 text-white">
+                    <tr>
+                      <th className="py-2 px-3 rounded-tl-2xl text-xs">Name</th>
+                      <th className="py-2 px-3 text-xs">Username</th>
+                      <th className="py-2 px-3 text-xs">Role</th>
+                      <th className="py-2 px-3 text-xs">Contact #</th>
+                      <th className="py-2 px-3 text-xs">Age</th>
+                      <th className="py-2 px-3 text-xs">Barrio</th>
+                      <th className="py-2 px-3 text-xs">Barangay</th>
+                      <th className="py-2 px-3 rounded-tr-2xl text-xs">Deleted On</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {deletedAccounts.map((account, index) => (
+                      <tr
+                        key={index}
+                        className="border-b border-gray-200 hover:bg-gray-50/50 transition-all"
+                      >
+                        <td className="py-2 px-3 font-medium text-xs">{account.firstName} {account.lastName}</td>
+                        <td className="py-2 px-3 text-xs">{account.username}</td>
+                        <td className="py-2 px-3">
+                          <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getRoleColor(account.role)}`}>
+                            {account.role}
+                          </span>
+                        </td>
+                        <td className="py-2 px-3 text-xs">{account.contactNumber || "N/A"}</td>
+                        <td className="py-2 px-3 text-xs">{account.age ?? "N/A"}</td>
+                        <td className="py-2 px-3 text-xs">{account.barrio || "—"}</td>
+                        <td className="py-2 px-3 text-xs">{account.barangay}</td>
+                        <td className="py-2 px-3 text-xs text-gray-600">{account.deletedDate}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+      {/* Clear All Button - Only show if there are deleted accounts 
+        {deletedAccounts.length > 0 && (
+          <button
+            onClick={() => {
+              setDeletedAccounts([]);
+              localStorage.setItem('deletedAccounts', JSON.stringify([]));
+              toast.success("All deleted accounts cleared!");
+            }}
+            className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-xl hover:from-gray-600 hover:to-gray-700 transition-all shadow-lg font-semibold text-xs"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+            Clear All
+          </button>
+        )}*/}
     </div>
   );
 };
