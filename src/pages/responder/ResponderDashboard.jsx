@@ -1017,7 +1017,12 @@ const ResponderDashboard = () => {
     if (loading) return;
 
     const responderSocket = io(import.meta.env.VITE_SOCKET_URL, { withCredentials: true });
-    responderSocket.emit("join-responder", username);
+    
+    // Send both username and fullName to the server
+    responderSocket.emit("join-responder", {
+      responderId: username,
+      responderName: fullName
+    });
 
     responderSocket.on("public-announcement", (data) => {
       showAnnouncementToast(data.message);
@@ -1067,34 +1072,34 @@ const ResponderDashboard = () => {
       pushNotif(data, "🔵 [responder] has arrived at the [type] report of [resident]", "/sounds/imhere.mp3")
     );
 
-    responderSocket.on("resident-followup", (data) => {
-      const message = `Resident ${data.residentName} requested follow-up for ${data.type} report`;
-      
-      // Play follow-up sound based on emergency type
-      const followupSound = new Audio(`/sounds/followup${data.type.toLowerCase()}.mp3`);
-      followupSound.play().catch(() => {});
-      
-      // Show toast notification
-      toast(message, { 
-        duration: 6000,
-        icon: "🔔",
-        style: {
-          background: '#dbeafe',
-          border: '1px solid #93c5fd',
-          color: '#1e40af'
-        }
-      });
-      
-      // Add to notifications list
-      const newNotif = {
-        message,
-        timestamp: new Date().toLocaleString(),
-        id: `followup-${Date.now()}`
-      };
-      
-      setResponderNotifications((prev) => [newNotif, ...prev]);
-      setHasNewNotif(true);
+  responderSocket.on("resident-followup", (data) => {
+    const message = `Resident ${data.residentName} requested follow-up for ${data.type} report`;
+    
+    // Play follow-up sound based on emergency type
+    const followupSound = new Audio(`/sounds/followup${data.type.toLowerCase()}.mp3`);
+    followupSound.play().catch(() => {});
+    
+    // Show toast notification
+    toast(message, { 
+      duration: 6000,
+      icon: "🔔",
+      style: {
+        background: '#dbeafe',
+        border: '1px solid #93c5fd',
+        color: '#1e40af'
+      }
     });
+    
+    // Add to notifications list
+    const newNotif = {
+      message,
+      timestamp: new Date().toLocaleString(),
+      id: `followup-${Date.now()}`
+    };
+    
+    setResponderNotifications((prev) => [newNotif, ...prev]);
+    setHasNewNotif(true);
+  });
 
   // Also update the report-cancelled handler to handle the activeResponders logic:
   responderSocket.on("report-cancelled", (data) => {
@@ -1131,8 +1136,8 @@ const ResponderDashboard = () => {
     }
   });
 
-    return () => responderSocket.disconnect();
-  }, [loading, username]);
+  return () => responderSocket.disconnect();
+  }, [loading, username, fullName]); // Add fullName to dependency array
 
   // ---------------- Persist notifications ----------------
   useEffect(() => {
