@@ -1017,19 +1017,20 @@ return (
                   Emergency responder is heading to your location.
                 </p>
               </div>
-              <div className="flex flex-col gap-3 w-full">
+              {/* ✅ CHANGED: Side-by-side buttons instead of stacked */}
+              <div className="flex gap-3 w-full">
                 <button
                   onClick={() => {
                     setReportToCancel(currentReportId);
                     setShowCancelConfirm(true);
                   }}
-                  className="px-6 py-3 rounded-2xl bg-gradient-to-r from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700 transition-all font-semibold shadow-lg hover:scale-105"
+                  className="flex-1 px-4 py-3 rounded-2xl bg-gradient-to-r from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700 transition-all font-semibold shadow-lg hover:scale-105 text-sm"
                 >
                   Cancel Request
                 </button>
                 <button
                   onClick={() => handleFollowUp(currentReportId)}
-                  className="px-6 py-3 rounded-2xl bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 transition-all font-semibold shadow-lg hover:scale-105"
+                  className="flex-1 px-4 py-3 rounded-2xl bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 transition-all font-semibold shadow-lg hover:scale-105 text-sm"
                 >
                   Follow Up
                 </button>
@@ -1037,31 +1038,31 @@ return (
             </>
           )}
 
-          {/* ARRIVED lah */}
-{loadingState === "arrived" && (
-  <>
-    <div className="text-6xl animate-bounce">🙋🏾</div>
-    <div>
-      <p className="text-xl font-bold text-purple-600">
-        Responder {arrivedResponderName} Has Arrived!
-      </p>
-      <p className="text-gray-600 text-sm mt-2">
-        The emergency responder has arrived at your location.
-      </p>
-    </div>
-    <button
-      onClick={() => setLoadingState(null)}
-      className="px-6 py-3 rounded-2xl bg-gradient-to-r from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700 transition-all font-semibold shadow-lg hover:scale-105"
-    >
-      Close
-    </button>
-  </>
-)}
+          {/* ARRIVED */}
+          {loadingState === "arrived" && (
+            <>
+              <div className="text-6xl animate-bounce">🙋🏾</div>
+              <div>
+                <p className="text-xl font-bold text-purple-600">
+                  Responder {arrivedResponderName} Has Arrived!
+                </p>
+                <p className="text-gray-600 text-sm mt-2">
+                  The emergency responder has arrived at your location.
+                </p>
+              </div>
+              <button
+                onClick={() => setLoadingState(null)}
+                className="px-6 py-3 rounded-2xl bg-gradient-to-r from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700 transition-all font-semibold shadow-lg hover:scale-105"
+              >
+                Close
+              </button>
+            </>
+          )}
 
           {/* RESPONDED */}
           {loadingState === "responded" && (
             <>
-              <div className="text-6xl">✅</div>
+              <div className="text-6xl animate-bounce ">✅</div>
               <div>
                 <p className="text-xl font-bold text-green-600">Emergency Responded!</p>
                 <p className="text-gray-600 text-sm mt-2">
