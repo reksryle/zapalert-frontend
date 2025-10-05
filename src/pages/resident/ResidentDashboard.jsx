@@ -21,9 +21,46 @@ const markerIcon = new L.Icon({
 const RecenterMap = ({ lat, lng }) => {
   const map = useMap();
   useEffect(() => {
-    map.setView([lat, lng], 18);
+    map.setView([lat, lng], 17);
   }, [lat, lng]);
   return null;
+};
+
+const RecenterControl = ({ lat, lng }) => {
+  const map = useMap();
+  
+  const handleRecenter = (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    
+    map.setView([lat, lng], 17);
+    map.flyTo([lat, lng], 18, {
+      duration: 1
+    });
+  };
+
+  return (
+    <div className="leaflet-bottom leaflet-right">
+      <div className="leaflet-control">
+        <button
+          onClick={handleRecenter}
+          type="button"
+          className="bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white font-semibold py-2 px-3 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 active:scale-95 border border-white/20"
+          title="Find your pinned location"
+          style={{ 
+            margin: '-5px 105px',
+            zIndex: 1000,
+            fontSize: '9px',
+            minWidth: '9px'
+          }}
+        >
+          <span className="flex items-center justify-center gap-1">
+            Find Pinned Location
+          </span>
+        </button>
+      </div>
+    </div>
+  );
 };
 
 // ---------------- Ripple Button Component ----------------
@@ -373,60 +410,61 @@ const EmergencyForm = ({ location, setLocation, user, networkStatus, setZapStatu
               </div>
             </div>
           ) : (
-            <div className="h-40 w-full rounded-lg overflow-hidden border-2 border-red-200 shadow-sm">
-              <MapContainer
-                center={[location.latitude, location.longitude]}
-                zoom={18}
-                scrollWheelZoom={false}
-                style={{ height: "100%", width: "100%" }}
+          <div className="h-40 w-full rounded-lg overflow-hidden border-2 border-red-200 shadow-sm relative">
+            <MapContainer
+              center={[location.latitude, location.longitude]}
+              zoom={17}
+              scrollWheelZoom={false}
+              style={{ height: "100%", width: "100%" }}
+            >
+              <TileLayer
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                attribution='&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a>'
+              />
+              <Marker
+                position={[location.latitude, location.longitude]}
+                icon={markerIcon}
+                draggable={!submitting}
+                eventHandlers={{
+                  dragend: (e) => {
+                    const { lat, lng } = e.target.getLatLng();
+                    setLocation({ latitude: lat, longitude: lng });
+                  },
+                }}
               >
-                <TileLayer
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                  attribution='&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a>'
-                />
-                <Marker
-                  position={[location.latitude, location.longitude]}
-                  icon={markerIcon}
-                  draggable={!submitting}
-                  eventHandlers={{
-                    dragend: (e) => {
-                      const { lat, lng } = e.target.getLatLng();
-                      setLocation({ latitude: lat, longitude: lng });
-                    },
-                  }}
+                <Tooltip
+                  permanent
+                  direction="top"
+                  offset={[3, -33]}
+                  opacity={1}
                 >
-                  <Tooltip
-                    permanent
-                    direction="top"
-                    offset={[3, -33]}
-                    opacity={1}
-                  >
-                    <div
-                      style={{
-                        background: "linear-gradient(135deg, #e6bebecc, #f1a4a454)", // glassy white-red blend
+                  <div
+                    style={{
+                      background: "linear-gradient(135deg, #e6bebecc, #f1a4a454)", // glassy white-red blend
 
                       
-                        padding: "6px 10px",
-                        fontSize: "11px",
-                        boxShadow: "0 4px 10px rgba(0,0,0,0.15)",
-                        textAlign: "center",
-                        lineHeight: 1.3,
-                        color: "#b91c1c", // deep red text
-                        backdropFilter: "blur(6px)", // glass effect
-                      }}
-                    >
-                      <div style={{ fontWeight: "700", fontSize: "12px", color: "#7f1d1d" }}>
-                        Your Location
-                      </div>
-                      <div style={{ fontSize: "10px", color: "#444" }}>
-                        Drag to adjust
-                      </div>
+                      padding: "6px 10px",
+                      fontSize: "11px",
+                      boxShadow: "0 4px 10px rgba(0,0,0,0.15)",
+                      textAlign: "center",
+                      lineHeight: 1.3,
+                      color: "#b91c1c", // deep red text
+                      backdropFilter: "blur(6px)", // glass effect
+                    }}
+                  >
+                    <div style={{ fontWeight: "700", fontSize: "12px", color: "#7f1d1d" }}>
+                      Your Location
                     </div>
-                  </Tooltip>
-                </Marker>
-                <RecenterMap lat={location.latitude} lng={location.longitude} />
-              </MapContainer>
-            </div>
+                    <div style={{ fontSize: "10px", color: "#444" }}>
+                      Drag to adjust
+                    </div>
+                  </div>
+                </Tooltip>
+              </Marker>
+              <RecenterMap lat={location.latitude} lng={location.longitude} />
+              <RecenterControl lat={location.latitude} lng={location.longitude} />
+            </MapContainer>
+          </div>
           )}
         </div>
 
@@ -604,7 +642,7 @@ useEffect(() => {
   });
 
   socket.on("declined", (data) => {
-    const message = `🔴 Responder ${data.responderName} declined your ${data.type} report.`;
+    const message = `🔴 Responder ${data.responderName} declined your ${data.type} report. Waiting for another response.`;
     toast.error(message, { duration: 6000 });
     declinedAudioRef.current?.play().catch(() => {});
     setNotifications(prev => [{ message, timestamp: new Date().toLocaleString() }, ...prev]);

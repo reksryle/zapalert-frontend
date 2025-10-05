@@ -16,6 +16,7 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [step, setStep] = useState(0);
   const [showPassword, setShowPassword] = useState(false);
+  const [showForgotPasswordTooltip, setShowForgotPasswordTooltip] = useState(false);
 
   const toastStyle = {
     toastId: "loginToast",
@@ -150,10 +151,10 @@ const Login = () => {
       <ToastContainer newestOnTop limit={3} />
 
       {/* Login Card */}
-      <form
-        onSubmit={handleLogin}
-        className="relative bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl w-full max-w-md p-8 space-y-6 border border-white/30"
-      >
+        <form
+          onSubmit={handleLogin}
+          className="relative bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl w-full max-w-md px-8 pt-8 pb-4 space-y-6 border border-white/30"
+        >
         {/* Logo & Title */}
         <div className="flex flex-col items-center text-center mb-6">
           <img
@@ -206,25 +207,59 @@ const Login = () => {
               {showPassword ? "Hide" : "Show"}
             </button>
           </div>
+          
+          {/* Forgot Password Note */}
+          <div className="flex justify-end relative -top-4 -left-1">
+            <div className="relative">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowForgotPasswordTooltip(!showForgotPasswordTooltip);
+                }}
+                className="text-xs text-gray-500 hover:text-red-600 transition-colors duration-200 font-medium"
+              >
+                Forgot Password?
+              </button>
+              
+              {/* Tooltip */}
+              {showForgotPasswordTooltip && (
+                <>
+                  <div 
+                    className="fixed inset-0 z-0"
+                    onClick={() => setShowForgotPasswordTooltip(false)}
+                  />
+                  <div className="absolute top-full right-0 mt-2 w-48 bg-white border border-red-200 rounded-lg shadow-lg p-3 z-10">
+                    <div className="text-xs text-gray-700 text-center leading-relaxed">
+                      Please approach the Barangay for assistance with your account.
+                    </div>
+                    <div className="absolute -top-1 right-4 w-2 h-2 bg-white border-t border-l border-red-200 transform rotate-45"></div>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
         </div>
 
-        {/* Login Button */}
-        <button
-          type="submit"
-          className="w-full py-3 bg-gradient-to-r from-red-600 via-red-500 to-orange-500 text-white font-bold rounded-xl hover:scale-105 hover:shadow-xl transition-all duration-300 shadow-lg"
-        >
-          Login
-        </button>
-
-        <p className="text-center text-sm text-gray-600">
-          Don't have an account?{" "}
-          <a
-            href="/signup"
-            className="text-red-600 font-semibold hover:text-red-800 hover:underline transition-colors"
+        {/* Login Button and Sign Up */}
+        <div className="relative -top-5">
+          <button
+            type="submit"
+            className="w-full py-3 bg-gradient-to-r from-red-600 via-red-500 to-orange-500 text-white font-bold rounded-xl hover:scale-105 hover:shadow-xl transition-all duration-300 shadow-lg"
           >
-            Sign up
-          </a>
-        </p>
+            Login
+          </button>
+
+          <p className="text-center text-sm text-gray-600 mt-4">
+            Don't have an account?{" "}
+            <a
+              href="/signup"
+              className="text-red-600 font-semibold hover:text-red-800 hover:underline transition-colors"
+            >
+              Sign up
+            </a>
+          </p>
+        </div>
       </form>
 
       {/* Help Button */}
