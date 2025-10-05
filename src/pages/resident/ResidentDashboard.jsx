@@ -40,18 +40,18 @@ const RecenterControl = ({ lat, lng }) => {
   };
 
   return (
-    <div className="leaflet-bottom leaflet-right">
-      <div className="leaflet-control">
+    <div className="leaflet-bottom" style={{ width: '100%', display: 'flex', justifyContent: 'center', pointerEvents: 'none' }}>
+      <div className="leaflet-control" style={{ pointerEvents: 'auto' }}>
         <button
           onClick={handleRecenter}
           type="button"
-          className="bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white font-semibold py-2 px-3 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 active:scale-95 border border-white/20"
+          className="bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white font-semibold py-2 px-3 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 active:scale-95 border border-white/20 whitespace-nowrap"
           title="Find your pinned location"
           style={{ 
-            margin: '-5px 105px',
+            margin: '-5px',
             zIndex: 1000,
             fontSize: '9px',
-            minWidth: '9px'
+            minWidth: '120px'
           }}
         >
           <span className="flex items-center justify-center gap-1">
