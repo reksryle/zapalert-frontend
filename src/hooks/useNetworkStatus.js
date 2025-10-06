@@ -7,7 +7,9 @@ const BASE_URL = import.meta.env.VITE_API_URL;
 export default function useNetworkStatus() {
   const [status, setStatus] = useState("checking");
   const lastStatus = useRef("checking");
-  const hasBeenOffline = useRef(false); // ✅ track if we've ever been offline
+  const hasBeenOffline = useRef(false);
+  const initialCheck = useRef(true);
+  const consecutiveFailures = useRef(0);
   const toastId = "network-status";
 
   const toastStyle = (type) => ({
@@ -45,51 +47,93 @@ export default function useNetworkStatus() {
     };
 
     const checkConnection = async () => {
+      // First check browser's native online status (most reliable)
       if (!navigator.onLine) {
-        if (lastStatus.current !== "offline") {
+        consecutiveFailures.current++;
+        if (lastStatus.current !== "offline" && consecutiveFailures.current >= 1) {
           setStatus("offline");
           lastStatus.current = "offline";
-          hasBeenOffline.current = true; // ✅ mark that we've gone offline
-          showToast("No connection", "error");
+          hasBeenOffline.current = true;
+          if (!initialCheck.current) {
+            showToast("No internet connection", "error");
+          }
         }
         return;
       }
 
+      // If browser says we're online, verify with server
       try {
-        await axios.get(`${BASE_URL}/health`, { timeout: 5000 });
-
+        const response = await axios.get(`${BASE_URL}/health`, { 
+          timeout: 3000,
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
+          }
+        });
+        
+        // Reset failure counter on successful check
+        consecutiveFailures.current = 0;
+        
         if (lastStatus.current !== "online") {
           setStatus("online");
           lastStatus.current = "online";
 
-          // ✅ only show "Connected" toast if we've ever been offline
-          if (hasBeenOffline.current) {
+          // Only show connected toast if we were previously offline
+          if (hasBeenOffline.current && !initialCheck.current) {
             showToast("Connected to network", "success");
-            hasBeenOffline.current = false; // reset
+            hasBeenOffline.current = false;
           }
         }
-      } catch {
-        if (lastStatus.current !== "offline") {
+      } catch (error) {
+        consecutiveFailures.current++;
+        
+        // Only show offline status after multiple consecutive failures
+        // This prevents false positives from temporary server issues
+        if (lastStatus.current !== "offline" && consecutiveFailures.current >= 2) {
           setStatus("offline");
           lastStatus.current = "offline";
           hasBeenOffline.current = true;
-          showToast("No internet access", "error");
+          if (!initialCheck.current) {
+            showToast("No internet access", "error");
+          }
         }
+      }
+
+      // Mark initial check as complete
+      if (initialCheck.current) {
+        initialCheck.current = false;
       }
     };
 
-    checkConnection();
-    const interval = setInterval(checkConnection, 5000);
+    // Initial check with slightly longer delay for production
+    const initialTimer = setTimeout(() => {
+      checkConnection();
+    }, 1500);
 
-    window.addEventListener("online", checkConnection);
-    window.addEventListener("offline", checkConnection);
+    // Regular checks - less frequent to reduce false positives
+    const interval = setInterval(checkConnection, 8000);
+
+    // Real-time browser events (most accurate)
+    const handleOnline = () => {
+      consecutiveFailures.current = 0;
+      checkConnection();
+    };
+
+    const handleOffline = () => {
+      consecutiveFailures.current = 2; // Immediately trigger offline
+      checkConnection();
+    };
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
 
     return () => {
+      clearTimeout(initialTimer);
       clearInterval(interval);
-      window.removeEventListener("online", checkConnection);
-      window.removeEventListener("offline", checkConnection);
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
     };
   }, []);
 
-  return status; // "offline" | "online"
+  return status;
 }
